@@ -28,9 +28,9 @@ import de.bielefeld.umweltamt.aui.mappings.DatabaseAccess;
 import de.bielefeld.umweltamt.aui.mappings.DatabaseClassToString;
 import de.bielefeld.umweltamt.aui.mappings.DatabaseQuery;
 import de.bielefeld.umweltamt.aui.mappings.DatabaseSerialVersionUID;
-import de.bielefeld.umweltamt.aui.mappings.basis.BasisObjekt;
+import de.bielefeld.umweltamt.aui.mappings.basis.Objekt;
+import de.bielefeld.umweltamt.aui.mappings.elka.Anfallstelle;
 import de.bielefeld.umweltamt.aui.utils.AuikLogger;
-
 import java.util.Date;
 import java.util.List;
 import java.util.Set;
@@ -45,11 +45,11 @@ public class Anh50Fachdaten  implements java.io.Serializable {
     /** Generated serialVersionUID for Serializable interface */
     private static final long serialVersionUID =
         DatabaseSerialVersionUID.forAnh50Fachdaten;
-    
+
     /* Primary key, foreign keys (relations) and table columns */
     private Integer id;
-    private AnhEntsorger anhEntsorger;
-    private BasisObjekt basisObjekt;
+    private Anfallstelle anfallstelle;
+    private Entsorger entsorger;
     private String telefon;
     private Boolean erloschen;
     private Date datumantrag;
@@ -70,19 +70,19 @@ public class Anh50Fachdaten  implements java.io.Serializable {
 
     /** Minimal constructor */
     public Anh50Fachdaten(
-        Integer id, BasisObjekt basisObjekt, boolean enabled, boolean deleted) {
+        Integer id, Anfallstelle anfallstelle, boolean enabled, boolean deleted) {
         this.id = id;
-        this.basisObjekt = basisObjekt;
+        this.anfallstelle = anfallstelle;
         this.enabled = enabled;
         this.deleted = deleted;
     }
 
     /** Full constructor */
     public Anh50Fachdaten(
-        Integer id, AnhEntsorger anhEntsorger, BasisObjekt basisObjekt, String telefon, Boolean erloschen, Date datumantrag, String bemerkungen, Date genehmigung, Date wiedervorlage, String gefaehrdungsklasse, boolean enabled, boolean deleted) {
+        Integer id, Anfallstelle anfallstelle, Entsorger entsorger, String telefon, Boolean erloschen, Date datumantrag, String bemerkungen, Date genehmigung, Date wiedervorlage, String gefaehrdungsklasse, boolean enabled, boolean deleted) {
         this.id = id;
-        this.anhEntsorger = anhEntsorger;
-        this.basisObjekt = basisObjekt;
+        this.anfallstelle = anfallstelle;
+        this.entsorger = entsorger;
         this.telefon = telefon;
         this.erloschen = erloschen;
         this.datumantrag = datumantrag;
@@ -103,20 +103,20 @@ public class Anh50Fachdaten  implements java.io.Serializable {
         this.id = id;
     }
 
-    public AnhEntsorger getAnhEntsorger() {
-        return this.anhEntsorger;
+    public Anfallstelle getAnfallstelle() {
+        return this.anfallstelle;
     }
 
-    public void setAnhEntsorger(AnhEntsorger anhEntsorger) {
-        this.anhEntsorger = anhEntsorger;
+    public void setAnfallstelle(Anfallstelle anfallstelle) {
+        this.anfallstelle = anfallstelle;
     }
 
-    public BasisObjekt getBasisObjekt() {
-        return this.basisObjekt;
+    public Entsorger getEntsorger() {
+        return this.entsorger;
     }
 
-    public void setBasisObjekt(BasisObjekt basisObjekt) {
-        this.basisObjekt = basisObjekt;
+    public void setEntsorger(Entsorger entsorger) {
+        this.entsorger = entsorger;
     }
 
     public String getTelefon() {
@@ -200,7 +200,7 @@ public class Anh50Fachdaten  implements java.io.Serializable {
      */
     @Override
     public String toString() {
-        return DatabaseClassToString.toStringForClass(this); 
+        return DatabaseClassToString.toStringForClass(this);
     }
 
     /**
@@ -209,20 +209,20 @@ public class Anh50Fachdaten  implements java.io.Serializable {
      */
     public String toDebugString() {
         StringBuffer buffer = new StringBuffer();
-        
+
         buffer.append(getClass().getSimpleName()).append("@").append(Integer.toHexString(hashCode())).append(" [");
-        buffer.append("id").append("='").append(getId()).append("' ");			
-        buffer.append("anhEntsorger").append("='").append(getAnhEntsorger()).append("' ");			
-        buffer.append("basisObjekt").append("='").append(getBasisObjekt()).append("' ");			
-        buffer.append("telefon").append("='").append(getTelefon()).append("' ");			
-        buffer.append("erloschen").append("='").append(getErloschen()).append("' ");			
-        buffer.append("datumantrag").append("='").append(getDatumantrag()).append("' ");			
-        buffer.append("bemerkungen").append("='").append(getBemerkungen()).append("' ");			
-        buffer.append("genehmigung").append("='").append(getGenehmigung()).append("' ");			
-        buffer.append("wiedervorlage").append("='").append(getWiedervorlage()).append("' ");			
-        buffer.append("gefaehrdungsklasse").append("='").append(getGefaehrdungsklasse()).append("' ");			
-        buffer.append("enabled").append("='").append(isEnabled()).append("' ");			
-        buffer.append("deleted").append("='").append(isDeleted()).append("' ");			
+        buffer.append("id").append("='").append(getId()).append("' ");
+        buffer.append("anfallstelle").append("='").append(getAnfallstelle()).append("' ");
+        buffer.append("entsorger").append("='").append(getEntsorger()).append("' ");
+        buffer.append("telefon").append("='").append(getTelefon()).append("' ");
+        buffer.append("erloschen").append("='").append(getErloschen()).append("' ");
+        buffer.append("datumantrag").append("='").append(getDatumantrag()).append("' ");
+        buffer.append("bemerkungen").append("='").append(getBemerkungen()).append("' ");
+        buffer.append("genehmigung").append("='").append(getGenehmigung()).append("' ");
+        buffer.append("wiedervorlage").append("='").append(getWiedervorlage()).append("' ");
+        buffer.append("gefaehrdungsklasse").append("='").append(getGefaehrdungsklasse()).append("' ");
+        buffer.append("enabled").append("='").append(isEnabled()).append("' ");
+        buffer.append("deleted").append("='").append(isDeleted()).append("' ");
         buffer.append("]");
 
         return buffer.toString();
@@ -254,7 +254,7 @@ public class Anh50Fachdaten  implements java.io.Serializable {
         result = result * 37 + idValue;
         return result;
     }
-    
+
     /**
      * Merge (save or update) a detached instance
      * @param detachedInstance the instance to merge
@@ -288,19 +288,19 @@ public class Anh50Fachdaten  implements java.io.Serializable {
      * @param copy Anh50Fachdaten
      */
     private void copy(Anh50Fachdaten copy) {
-        this.id = copy.getId();            
-        this.anhEntsorger = copy.getAnhEntsorger();            
-        this.basisObjekt = copy.getBasisObjekt();            
-        this.telefon = copy.getTelefon();            
-        this.erloschen = copy.getErloschen();            
-        this.datumantrag = copy.getDatumantrag();            
-        this.bemerkungen = copy.getBemerkungen();            
-        this.genehmigung = copy.getGenehmigung();            
-        this.wiedervorlage = copy.getWiedervorlage();            
-        this.gefaehrdungsklasse = copy.getGefaehrdungsklasse();            
-        this.enabled = copy.isEnabled();            
-        this.deleted = copy.isDeleted();            
-    }    
+        this.id = copy.getId();
+        this.anfallstelle = copy.getAnfallstelle();
+        this.entsorger = copy.getEntsorger();
+        this.telefon = copy.getTelefon();
+        this.erloschen = copy.getErloschen();
+        this.datumantrag = copy.getDatumantrag();
+        this.bemerkungen = copy.getBemerkungen();
+        this.genehmigung = copy.getGenehmigung();
+        this.wiedervorlage = copy.getWiedervorlage();
+        this.gefaehrdungsklasse = copy.getGefaehrdungsklasse();
+        this.enabled = copy.isEnabled();
+        this.deleted = copy.isDeleted();
+    }
 
     /**
      * Delete (mark as deleted) a detached instance
@@ -345,18 +345,10 @@ public class Anh50Fachdaten  implements java.io.Serializable {
     }
 
     /* Custom code goes below here! */
-    public static Anh50Fachdaten findByObjektId(java.lang.Integer id){
-        log.debug("Getting Anh50Fachdaten with connected BasisObjekt with id: " + id);
-        /*List<Anh50Fachdaten> all = Anh50Fachdaten.getAll();
-        for(Anh50Fachdaten i : all){
-            if(i.getBasisObjekt().getId().equals(id)){
-                return (Anh50Fachdaten) new DatabaseAccess().get(Anh50Fachdaten.class, i.getId());
-            }
-        }
-        return null;*/
-        BasisObjekt objekt = (BasisObjekt) HibernateSessionFactory.currentSession().createQuery("from BasisObjekt where id= " + id).list().get(0);
-        //BasisObjekt.findById(id);
-        Set<Anh50Fachdaten> list = objekt.getAnh50Fachdatens();
+    public static Anh50Fachdaten findByAnfallstelleId(java.lang.Integer id){
+        log.debug("Getting Anh50Fachdaten instance with connected Anfallstelle with id: " + id);
+        Anfallstelle anfallstelle = (Anfallstelle) HibernateSessionFactory.currentSession().createQuery("from Anfallstelle where id= " + id).list().get(0);
+        Set<Anh50Fachdaten> list = anfallstelle.getAnh50Fachdatens();
         return list.iterator().next();
     }
 }

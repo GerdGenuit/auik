@@ -24,6 +24,7 @@
  */
 package de.bielefeld.umweltamt.aui.module.objektpanels;
 
+import java.awt.Color;
 import java.awt.Point;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -31,15 +32,18 @@ import java.awt.event.KeyEvent;
 import java.awt.event.MouseEvent;
 import java.io.File;
 import java.sql.Timestamp;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 
 import javax.swing.AbstractAction;
 import javax.swing.Action;
+import javax.swing.BorderFactory;
 import javax.swing.DefaultComboBoxModel;
 import javax.swing.JButton;
 import javax.swing.JComboBox;
+import javax.swing.JComponent;
 import javax.swing.JFormattedTextField;
 import javax.swing.JMenuItem;
 import javax.swing.JPanel;
@@ -54,7 +58,6 @@ import javax.swing.ScrollPaneConstants;
 
 import com.jgoodies.forms.builder.DefaultFormBuilder;
 import com.jgoodies.forms.builder.PanelBuilder;
-import com.jgoodies.forms.factories.ButtonBarFactory;
 import com.jgoodies.forms.layout.CellConstraints;
 import com.jgoodies.forms.layout.FormLayout;
 import com.toedter.calendar.JDateChooser;
@@ -63,19 +66,21 @@ import de.bielefeld.umweltamt.aui.GUIManager;
 import de.bielefeld.umweltamt.aui.HauptFrame;
 import de.bielefeld.umweltamt.aui.SettingsManager;
 import de.bielefeld.umweltamt.aui.mappings.DatabaseQuery;
-import de.bielefeld.umweltamt.aui.mappings.atl.AtlAnalyseposition;
-import de.bielefeld.umweltamt.aui.mappings.atl.AtlKlaeranlagen;
-import de.bielefeld.umweltamt.aui.mappings.atl.AtlProbeart;
-import de.bielefeld.umweltamt.aui.mappings.atl.AtlProbenahmen;
-import de.bielefeld.umweltamt.aui.mappings.atl.AtlProbepkt;
-import de.bielefeld.umweltamt.aui.mappings.basis.BasisObjektverknuepfung;
-import de.bielefeld.umweltamt.aui.mappings.basis.BasisSachbearbeiter;
+import de.bielefeld.umweltamt.aui.mappings.atl.Analyseposition;
+import de.bielefeld.umweltamt.aui.mappings.atl.Klaeranlage;
+import de.bielefeld.umweltamt.aui.mappings.atl.Probeart;
+import de.bielefeld.umweltamt.aui.mappings.atl.Probenahme;
+import de.bielefeld.umweltamt.aui.mappings.atl.Sielhaut;
+import de.bielefeld.umweltamt.aui.mappings.atl.Messstelle;
+import de.bielefeld.umweltamt.aui.mappings.basis.Objektverknuepfung;
+import de.bielefeld.umweltamt.aui.mappings.basis.Sachbearbeiter;
 import de.bielefeld.umweltamt.aui.module.BasisObjektBearbeiten;
 import de.bielefeld.umweltamt.aui.module.common.ObjektChooser;
 import de.bielefeld.umweltamt.aui.module.common.editors.ProbenEditor;
 import de.bielefeld.umweltamt.aui.module.common.tablemodels.ObjektVerknuepfungModel;
 import de.bielefeld.umweltamt.aui.module.common.tablemodels.ProbenahmenModel;
 import de.bielefeld.umweltamt.aui.utils.AuikLogger;
+import de.bielefeld.umweltamt.aui.utils.ComponentFactory;
 import de.bielefeld.umweltamt.aui.utils.DateUtils;
 import de.bielefeld.umweltamt.aui.utils.IntegerField;
 import de.bielefeld.umweltamt.aui.utils.LimitedTextField;
@@ -85,7 +90,7 @@ import de.bielefeld.umweltamt.aui.utils.PDFExporter;
  * Das "Probepunkt"-Tab des BasisObjektBearbeiten-Moduls
  * @author David Klotz
  */
-public class ProbepunktPanel extends JPanel {
+public class ProbepunktPanel extends ObjectPanel {
     private static final long serialVersionUID = 3663375435585578751L;
 
     /** Logging */
@@ -111,10 +116,11 @@ public class ProbepunktPanel extends JPanel {
     private ProbenahmenModel probenahmenModel = null;
 
     // Daten
-    private AtlProbepkt probepkt = null;
-    private AtlProbeart[] probearten = null;
-    private AtlKlaeranlagen[] klaeranlagen = null;
-    private BasisSachbearbeiter[] sachbearbeiter = null;
+    private Messstelle probepkt = null;
+    private Sielhaut sielhaut = null;
+    private Probeart[] probearten = null;
+    private Klaeranlage[] klaeranlagen = null;
+    private Sachbearbeiter[] sachbearbeiter = null;
 
     // Objektverknuepfer
     private ObjektVerknuepfungModel objektVerknuepfungModel;
@@ -160,7 +166,6 @@ public class ProbepunktPanel extends JPanel {
                 "pref"); // 27
 
         PanelBuilder builder = new PanelBuilder(layout, this);
-        builder.setDefaultDialogBorder();
         CellConstraints cc = new CellConstraints();
 
         builder.addSeparator("Eigenschaften", cc.xyw(1, 1, 6));
@@ -174,9 +179,6 @@ public class ProbepunktPanel extends JPanel {
         builder.add(getSachbearbeiterBox(), cc.xy(3, 7));
         builder.addLabel("Branche:", cc.xy(1, 9));
         builder.add(getBrancheFeld(), cc.xy(3, 9));
-
-        JPanel buttonBar = ButtonBarFactory.buildOKBar(getSavePktButton());
-        builder.add(buttonBar, cc.xyw(1, 11, 6));
 
         builder.addSeparator("Beschreibung", cc.xyw(1, 13, 6));
         JScrollPane beschScroller = new JScrollPane(
@@ -200,22 +202,26 @@ public class ProbepunktPanel extends JPanel {
             ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
         builder.add(objektverknuepfungScroller, cc.xyw(1, 25, 6));
 
-        JPanel buttonBarOv = ButtonBarFactory
-            .buildRightAlignedBar(getPrintDeckblattButton(), getSelectObjektButton());
+        JComponent buttonBarOv = ComponentFactory
+            .buildRightAlignedBar(getPrintDeckblattButton(), getSelectObjektButton(), getSavePktButton());
 
         builder.add(buttonBarOv, cc.xyw(1, 27, 6));
+        addChangeListeners(getProbePktNrFeld(), getProbePktBeschreibungsArea(),
+            getKennummerFeld(), getBrancheFeld(),
+            getProbeKABox(), getProbePktArtBox(), getSachbearbeiterBox());
+
     }
 
     public void fetchFormData() throws RuntimeException {
-        this.probepkt = AtlProbepkt.findByObjektId(
-            this.hauptModul.getObjekt().getObjektid());
+        this.probepkt = Messstelle.findByObjektId(
+            this.hauptModul.getObjekt().getId());
         log.debug("Probepunkt aus DB geholt: " + this.probepkt);
 
         if (this.probearten == null) {
             this.probearten = DatabaseQuery.getProbearten();
         }
         if (this.klaeranlagen == null) {
-            this.klaeranlagen = DatabaseQuery.getKlaeranlagen();
+            this.klaeranlagen = DatabaseQuery.getKlaeranlage();
         }
         if (this.sachbearbeiter == null) {
             this.sachbearbeiter = DatabaseQuery.getEnabledSachbearbeiter();
@@ -234,14 +240,15 @@ public class ProbepunktPanel extends JPanel {
         if (this.sachbearbeiter != null) {
             getSachbearbeiterBox().setModel(
                 new DefaultComboBoxModel(this.sachbearbeiter));
+            sachbearbeiterBox.setBorder(BorderFactory.createLineBorder(Color.LIGHT_GRAY));
             getSachbearbeiterBox().setEditable(true);
         }
 
         if (this.probepkt != null) {
-            getProbePktArtBox().setSelectedItem(this.probepkt.getAtlProbeart());
-            getProbeKABox().setSelectedItem(this.probepkt.getAtlKlaeranlagen());
+            getProbePktArtBox().setSelectedItem(this.probepkt.getProbeart());
+            getProbeKABox().setSelectedItem(this.probepkt.getKlaeranlage());
             getSachbearbeiterBox().setSelectedItem(
-                this.probepkt.getBasisSachbearbeiter());
+                this.probepkt.getSachbearbeiter());
 
             if (this.probepkt.getNrProbepkt() != null) {
                 getProbePktNrFeld().setValue(this.probepkt.getNrProbepkt());
@@ -256,6 +263,7 @@ public class ProbepunktPanel extends JPanel {
 
             this.objektVerknuepfungModel.setObjekt(this.hauptModul.getObjekt());
         }
+        setDirty(false);
     }
 
     public void clearForm() {
@@ -288,7 +296,7 @@ public class ProbepunktPanel extends JPanel {
     /**
      * Bearbeitet eine Probenahme.
      */
-    public void editProbenahme(AtlProbenahmen probe) {
+    public void editProbenahme(Probenahme probe) {
         ProbenEditor editDialog = new ProbenEditor(probe,
             this.hauptModul.getFrame(), false);
         editDialog.setLocationRelativeTo(this.hauptModul.getFrame());
@@ -305,12 +313,12 @@ public class ProbepunktPanel extends JPanel {
         if (this.probepkt != null) {
             boolean exists = DatabaseQuery.probenahmeExists(kennNummer);
             if (!exists) {
-                AtlProbenahmen probe = new AtlProbenahmen();
+                Probenahme probe = new Probenahme();
                 probe.setKennummer(kennNummer);
                 probe.setDatumDerEntnahme(datum);
                 probe
-                    .setAtlAnalysepositions(new HashSet<AtlAnalyseposition>());
-                probe.setAtlProbepkt(this.probepkt);
+                    .setAnalysepositions(new HashSet<Analyseposition>());
+                probe.setMessstelle(this.probepkt);
 
                 ProbenEditor editDialog = new ProbenEditor(probe,
                     this.hauptModul.getFrame(), true);
@@ -329,23 +337,23 @@ public class ProbepunktPanel extends JPanel {
         }
     }
 
-    private boolean saveProbepunktDaten() {
+    protected boolean doSavePanelData() {
         boolean success;
 
         if (this.probepkt != null) {
             // Eingegebene Daten für den Probepunkt �bernehmen
             if (getProbePktArtBox().getSelectedItem() != null) {
-                this.probepkt.setAtlProbeart((AtlProbeart) getProbePktArtBox()
+                this.probepkt.setProbeart((Probeart) getProbePktArtBox()
                     .getSelectedItem());
             }
             if (getProbeKABox().getSelectedItem() != null) {
                 this.probepkt
-                    .setAtlKlaeranlagen((AtlKlaeranlagen) getProbeKABox()
+                    .setKlaeranlage((Klaeranlage) getProbeKABox()
                         .getSelectedItem());
             }
             if (getSachbearbeiterBox().getSelectedItem() != null) {
                 this.probepkt
-                    .setBasisSachbearbeiter((BasisSachbearbeiter) getSachbearbeiterBox()
+                    .setSachbearbeiter((Sachbearbeiter) getSachbearbeiterBox()
                         .getSelectedItem());
             }
 
@@ -373,13 +381,18 @@ public class ProbepunktPanel extends JPanel {
     public void completeObjekt() {
         if (this.hauptModul.isNew() || this.probepkt == null) {
             // Neuen Probepunkt erzeugen
-            this.probepkt = new AtlProbepkt();
+            this.probepkt = new Messstelle();
             // Objekt_Id setzen
-            this.probepkt.setBasisObjekt(this.hauptModul.getObjekt());
+            this.probepkt.setObjekt(this.hauptModul.getObjekt());
 
             // Probepunkt speichern
             if (this.probepkt.merge()) {
                 log.debug("Neuer Probepunkt " + this.probepkt + " gespeichert.");
+                if (this.probepkt.getObjekt().getObjektarten().getId() == 40) {
+                	this.sielhaut = new Sielhaut();
+                	this.sielhaut.setMessstelle(probepkt);
+                	this.sielhaut.merge();
+                }
             }
         }
     }
@@ -459,7 +472,7 @@ public class ProbepunktPanel extends JPanel {
                             int row = ProbepunktPanel.this.probenahmeTabelle
                                 .rowAtPoint(origin);
 
-                            AtlProbenahmen probe = ProbepunktPanel.this.probenahmenModel
+                            Probenahme probe = ProbepunktPanel.this.probenahmenModel
                                 .getRow(row);
                             editProbenahme(probe);
                         }
@@ -482,7 +495,7 @@ public class ProbepunktPanel extends JPanel {
                     // Natürlich nur editieren, wenn wirklich eine Zeile
                     // ausgewählt ist
                     if (row != -1) {
-                        AtlProbenahmen probe = ProbepunktPanel.this.probenahmenModel
+                        Probenahme probe = ProbepunktPanel.this.probenahmenModel
                             .getRow(row);
                         editProbenahme(probe);
                     }
@@ -504,7 +517,7 @@ public class ProbepunktPanel extends JPanel {
                     if (row != -1
                         && ProbepunktPanel.this.probenahmeTabelle
                             .getEditingRow() == -1) {
-                        AtlProbenahmen probe = ProbepunktPanel.this.probenahmenModel
+                        Probenahme probe = ProbepunktPanel.this.probenahmenModel
                             .getRow(row);
                         if (GUIManager
                             .getInstance()
@@ -555,8 +568,7 @@ public class ProbepunktPanel extends JPanel {
 
     private JDateChooser getDatumsChooser() {
         if (this.datumsChooser == null) {
-            this.datumsChooser = new JDateChooser(DateUtils.FORMAT_DEFAULT,
-                false);
+            this.datumsChooser = new JDateChooser(new Date(), DateUtils.FORMAT_DEFAULT);
         }
 
         return this.datumsChooser;
@@ -590,13 +602,13 @@ public class ProbepunktPanel extends JPanel {
 
     private JButton getSavePktButton() {
         if (this.savePktButton == null) {
-            this.savePktButton = new JButton("Probepunkt speichern");
+            this.savePktButton = new JButton("Objekt speichern");
 
             this.savePktButton.addActionListener(new ActionListener() {
                 @Override
                 public void actionPerformed(ActionEvent e) {
                     enableAll(false);
-                    if (saveProbepunktDaten()) {
+                    if (hauptModul.saveAllTabs()) {
                         ProbepunktPanel.this.hauptModul.getFrame()
                             .changeStatus(
                                 "Probepunkt "
@@ -650,18 +662,18 @@ public class ProbepunktPanel extends JPanel {
                                 origin);
 
                             if (row != -1) {
-                                BasisObjektverknuepfung obj = ProbepunktPanel.this.objektVerknuepfungModel
+                                Objektverknuepfung obj = ProbepunktPanel.this.objektVerknuepfungModel
                                     .getRow(row);
-                                if (obj.getBasisObjektByIstVerknuepftMit()
-                                    .getObjektid().intValue() != ProbepunktPanel.this.hauptModul
-                                    .getObjekt().getObjektid().intValue())
+                                if (obj.getObjektByIstVerknuepftMit()
+                                    .getId().intValue() != ProbepunktPanel.this.hauptModul
+                                    .getObjekt().getId().intValue())
                                     ProbepunktPanel.this.hauptModul
                                         .getManager()
                                         .getSettingsManager()
                                         .setSetting(
                                             "auik.imc.edit_object",
-                                            obj.getBasisObjektByIstVerknuepftMit()
-                                                .getObjektid().intValue(),
+                                            obj.getObjektByIstVerknuepftMit()
+                                                .getId().intValue(),
                                             false);
                                 else
                                     ProbepunktPanel.this.hauptModul
@@ -669,8 +681,8 @@ public class ProbepunktPanel extends JPanel {
                                         .getSettingsManager()
                                         .setSetting(
                                             "auik.imc.edit_object",
-                                            obj.getBasisObjektByObjekt()
-                                                .getObjektid().intValue(),
+                                            obj.getObjektByObjekt()
+                                                .getId().intValue(),
                                             false);
                                 ProbepunktPanel.this.hauptModul.getManager()
                                     .switchModul("m_objekt_bearbeiten");
@@ -732,7 +744,7 @@ public class ProbepunktPanel extends JPanel {
                     int row = getObjektverknuepungTabelle().getSelectedRow();
                     if (row != -1
                         && getObjektverknuepungTabelle().getEditingRow() == -1) {
-                        BasisObjektverknuepfung verknuepfung = ProbepunktPanel.this.objektVerknuepfungModel
+                        Objektverknuepfung verknuepfung = ProbepunktPanel.this.objektVerknuepfungModel
                             .getRow(row);
                         if (GUIManager.getInstance().showQuestion(
                             "Soll die Verknüpfung wirklich gelöscht werden?\n"
@@ -775,7 +787,7 @@ public class ProbepunktPanel extends JPanel {
                 public void actionPerformed(ActionEvent e) {
                     ObjektChooser chooser = new ObjektChooser(
                         ProbepunktPanel.this.hauptModul.getFrame(),
-                        ProbepunktPanel.this.probepkt.getBasisObjekt(),
+                        ProbepunktPanel.this.probepkt.getObjekt(),
                         ProbepunktPanel.this.objektVerknuepfungModel);
                     chooser.setVisible(true);
                 }
@@ -783,7 +795,7 @@ public class ProbepunktPanel extends JPanel {
         }
         return this.selectObjektButton;
     }
-    
+
     private JButton getPrintDeckblattButton() {
         if (this.printDeckblattButton == null) {
             this.printDeckblattButton = new JButton("Deckblatt drucken");
@@ -801,16 +813,16 @@ public class ProbepunktPanel extends JPanel {
         }
         return this.printDeckblattButton;
     }
-    
+
     public void showReport() {
-        if (hauptModul.getObjekt().getObjektid() != null) {
+        if (hauptModul.getObjekt().getId() != null) {
             SettingsManager sm = SettingsManager.getInstance();
             String fotoPath = sm.getSetting("auik.system.probepktpath_fotos");
             Map<String, Object> params = new HashMap<String, Object>();
-            params.put("id", hauptModul.getObjekt().getObjektid());
-            String file = fotoPath + hauptModul.getObjekt().getObjektid() + ".jpg";
+            params.put("id", hauptModul.getObjekt().getId());
+            String file = fotoPath + hauptModul.getObjekt().getId() + ".jpg";
 
-            String id=hauptModul.getObjekt().getObjektid().toString();
+            String id=hauptModul.getObjekt().getId().toString();
             if (id != null
                     && new File(file).canRead()) {
                 params.put("foto", new String(fotoPath + id + ".jpg"));

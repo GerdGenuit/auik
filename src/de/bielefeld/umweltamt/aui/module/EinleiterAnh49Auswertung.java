@@ -71,7 +71,7 @@ import com.jgoodies.forms.layout.FormLayout;
 import de.bielefeld.umweltamt.aui.GUIManager;
 import de.bielefeld.umweltamt.aui.HauptFrame;
 import de.bielefeld.umweltamt.aui.mappings.DatabaseQuery;
-import de.bielefeld.umweltamt.aui.mappings.basis.BasisSachbearbeiter;
+import de.bielefeld.umweltamt.aui.mappings.basis.Sachbearbeiter;
 import de.bielefeld.umweltamt.aui.module.common.AbstractQueryModul;
 import de.bielefeld.umweltamt.aui.module.common.tablemodels.Anh49Model;
 import de.bielefeld.umweltamt.aui.utils.AuikLogger;
@@ -135,9 +135,10 @@ public class EinleiterAnh49Auswertung extends AbstractQueryModul {
             aktivCheck.setSelected(false);
             sachbBox = new JComboBox();
             sachbBox.setModel(new DefaultComboBoxModel(
-                DatabaseQuery.getOrderedAll(new BasisSachbearbeiter(), "name")
-                    .toArray(new BasisSachbearbeiter[0])));
-            sachbBox.setSelectedItem(DatabaseQuery.getCurrentSachbearbeiter());
+                DatabaseQuery.getOrderedAll(new Sachbearbeiter(), "name")
+                    .toArray(new Sachbearbeiter[0])));
+            sachbBox.insertItemAt(null, 0);
+            sachbBox.setSelectedItem(0);
 //            dekraTuevBox = new JComboBox();
 //            dekraTuevBox.setModel(new DefaultComboBoxModel(
 //                DatabaseQuery.getOldDekraTuevYears()));
@@ -156,9 +157,9 @@ public class EinleiterAnh49Auswertung extends AbstractQueryModul {
                         aktivCheck.isSelected(),
                         abgemeldetCheck.isSelected(),
                         abwasserfreiCheck.isSelected(),
-                        wiedervorlageCheck.isSelected(),
+                       wiedervorlageCheck.isSelected(),
 //                        (Integer) dekraTuevBox.getSelectedItem(),
-                        (BasisSachbearbeiter) sachbBox.getSelectedItem()));
+                        (Sachbearbeiter) sachbBox.getSelectedItem()));
                     model.fireTableDataChanged();
                     frame.changeStatus("" + model.getRowCount()
                         + " Objekte gefunden");
@@ -179,7 +180,7 @@ public class EinleiterAnh49Auswertung extends AbstractQueryModul {
             builder.append("");
 //            builder.append("TÜV/DEKRA Termin:", dekraTuevBox);
             builder.append(getTabelleExportButton());
-            builder.append(wiedervorlageCheck);
+//            builder.append(wiedervorlageCheck);
             builder.append(abwasserfreiCheck);
 
             queryPanel = builder.getPanel();

@@ -47,7 +47,7 @@ import de.bielefeld.umweltamt.aui.utils.AuikLogger;
  * <br>
  * TODO: Most of the stuff which should be here is still scattered across the
  * project and should move here bit by bit.
- * 
+ *
  * @author <a href="mailto:post@connz.de">Conny Pearce (u633z)</a>
  */
 public final class GUIManager
@@ -59,7 +59,7 @@ public final class GUIManager
 	/** Der lange Name des Programms */
 	public static final String LONG_NAME = "Anlagen- und Indirekteinleiter-Kataster";
 	/** Program version */
-	private static final String VERSION = null;
+	private static final String VERSION = "1.1.0";
 	/** Program authors */
 	private static final Vector<String> AUTHORS = new Vector<String>();
 	/** Program authors as a HTML table */
@@ -90,6 +90,7 @@ public final class GUIManager
 		//UIManager.getLookAndFeelDefaults().put("PopupMenu.background", Color.WHITE);
 
 		UIManager.put("MenuItem.selectionForeground", Color.BLUE);
+		UIManager.put("TabbedPane.contentOpaque", false);
 	}
 
 	/** Get the GUIManager instance */
@@ -145,7 +146,7 @@ public final class GUIManager
 
 	/**
 	 * Set the status in the running frame
-	 * 
+	 *
 	 * @param txt
 	 *            The new status text
 	 */
@@ -159,7 +160,7 @@ public final class GUIManager
 
 	/**
 	 * Set the status in the running frame as error message
-	 * 
+	 *
 	 * @param txt
 	 *            The error status text
 	 */
@@ -173,7 +174,7 @@ public final class GUIManager
 
 	/**
 	 * Show a question dialog
-	 * 
+	 *
 	 * @param question
 	 *            The question to ask
 	 * @param title
@@ -194,7 +195,7 @@ public final class GUIManager
 
 	/**
 	 * Show an info message
-	 * 
+	 *
 	 * @param message
 	 *            The message
 	 * @param title
@@ -208,7 +209,7 @@ public final class GUIManager
 
 	/**
 	 * Show an error message
-	 * 
+	 *
 	 * @param message
 	 *            The message
 	 * @param title
@@ -228,7 +229,7 @@ public final class GUIManager
 
 	/**
 	 * Diese Methode liefert die aktuelle Version der Software.
-	 * 
+	 *
 	 * @return die Versionsnummer
 	 */
 	public final String getVersion()
@@ -288,7 +289,7 @@ public final class GUIManager
 
 	/**
 	 * Diese Methode liefert eine Liste der Autoren des AUIK.
-	 * 
+	 *
 	 * @return die Autoren des AUIK als Array.
 	 */
 	private final Vector<String> getAuthors()
@@ -346,7 +347,7 @@ public final class GUIManager
 
 	/**
 	 * Diese Methode liefert die Liste der Autoren als HTML Tabelle formatiert.
-	 * 
+	 *
 	 * @return die Autorenliste als HTML Tabelle.
 	 */
 	/* For some reason this does not work with line separators. */

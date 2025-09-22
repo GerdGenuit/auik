@@ -30,10 +30,11 @@ package de.bielefeld.umweltamt.aui.module;
 
 import de.bielefeld.umweltamt.aui.mappings.DatabaseConstants;
 import de.bielefeld.umweltamt.aui.mappings.DatabaseQuery;
-import de.bielefeld.umweltamt.aui.mappings.atl.AtlAnalyseposition;
-import de.bielefeld.umweltamt.aui.mappings.atl.AtlEinheiten;
-import de.bielefeld.umweltamt.aui.mappings.atl.AtlParameter;
-import de.bielefeld.umweltamt.aui.mappings.atl.AtlProbenahmen;
+import de.bielefeld.umweltamt.aui.mappings.atl.Analyseposition;
+import de.bielefeld.umweltamt.aui.mappings.atl.Einheiten;
+import de.bielefeld.umweltamt.aui.mappings.atl.Parameter;
+import de.bielefeld.umweltamt.aui.mappings.atl.Probenahme;
+import de.bielefeld.umweltamt.aui.mappings.elka.MapElkaAnalysemethode;
 import de.bielefeld.umweltamt.aui.utils.AuikLogger;
 
 
@@ -45,7 +46,7 @@ import de.bielefeld.umweltamt.aui.utils.AuikLogger;
  */
 public class AnalyseProcessor {
 
-	/** Logging */
+    /** Logging */
     private static final AuikLogger log = AuikLogger.getLogger();
 
     /**
@@ -64,6 +65,7 @@ public class AnalyseProcessor {
         String grkl                 = unquote(columns[4]);
         String wert                 = unquote(columns[5]);
         String einheitId            = unquote(columns[6]);
+        String methode              = unquote(columns[8]);
 
         int id = -1;
         if (einheitId != null && !einheitId.equals("")) {
@@ -74,7 +76,7 @@ public class AnalyseProcessor {
             "Verarbeite Analyseposition für Parameter: " +
             parameterBezeichnung);
 
-        AtlProbenahmen probe = DatabaseQuery.findProbenahme(kennnummer);
+        Probenahme probe = DatabaseQuery.findProbenahme(kennnummer);
 
         if (probe == null) {
             log.error(
@@ -84,25 +86,58 @@ public class AnalyseProcessor {
             return false;
         }
 
-        AtlParameter parameter = AtlParameter.findById(ordnungsbegriff);
-        AtlEinheiten einheit   = AtlEinheiten.findById(id);
+        Parameter parameter = Parameter.findById(ordnungsbegriff);
+        Einheiten einheit   = Einheiten.findById(id);
+        MapElkaAnalysemethode mapAna = MapElkaAnalysemethode.findByMethoden(methode);
 
-        AtlAnalyseposition position = DatabaseQuery.findAnalyseposition(
+        Analyseposition position = DatabaseQuery.findAnalyseposition(
             probe, parameter, einheit, true);
 
         if (position != null) {
 
             position.setWert(Float.parseFloat(wert));
             position.setGrkl(grkl);
-            position.setAtlEinheiten(einheit);
+            position.setEinheiten(einheit);
             position.setAnalyseVon("E-Satzung");
+            if (mapAna != null) {
+                position.setMapElkaAnalysemethode(mapAna);
+            } else {
+                if (methode != "") {
+                    mapAna = new MapElkaAnalysemethode();
+                    mapAna.setMethode(methode);
+                    mapAna.setGruppeDevId("000");
+                    mapAna.setRegelwerkId("00");
+                    mapAna.setVariantenId("0");
+                    mapAna.merge();
+                    position.setMapElkaAnalysemethode(mapAna);
+                } else {
+                    position.setMapElkaAnalysemethode(MapElkaAnalysemethode.findById(1));
+                }
+            }
+
             position.merge();
 
-            probe.setAtlStatus(DatabaseConstants.ATL_STATUS_DATEN_EINGETRAGEN);
+            probe.setStatus(DatabaseConstants.ATL_STATUS_DATEN_EINGETRAGEN);
             probe.merge();
         }
 
         return true;
+    }
+
+    public static String getIdNumberOfRow(String[] row) {
+        if (row.length >= 1) {
+            return unquote(row[0]);
+        } else {
+            return null;
+        }
+    }
+
+    public static String getParamOfRow(String[] row) {
+        if (row.length >= 1) {
+            return unquote(row[3]);
+        } else {
+            return null;
+        }
     }
 
 
@@ -133,7 +168,7 @@ public class AnalyseProcessor {
      * {@link AtlParameter} besitzt.
      */
     public static int importStatus(String kenn, String param, String einh) {
-        AtlProbenahmen probe = DatabaseQuery.findProbenahme(kenn);
+        Probenahme probe = DatabaseQuery.findProbenahme(kenn);
 
         if (probe == null) {
             return -1;
@@ -143,14 +178,14 @@ public class AnalyseProcessor {
             return 2;
         }
 
-        AtlParameter parameter = AtlParameter.findById(param);
-        AtlEinheiten   einheit = AtlEinheiten.findById(Integer.parseInt(einh));
+        Parameter parameter = Parameter.findById(param);
+        Einheiten   einheit = Einheiten.findById(Integer.parseInt(einh));
 
         if (parameter == null || einheit == null) {
             return -1;
         }
 
-        AtlAnalyseposition position = DatabaseQuery.findAnalyseposition(
+        Analyseposition position = DatabaseQuery.findAnalyseposition(
             probe, parameter, einheit, false);
 
         return position != null ? 1 : 2;

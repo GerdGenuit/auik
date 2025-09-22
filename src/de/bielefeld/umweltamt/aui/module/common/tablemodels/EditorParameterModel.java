@@ -21,7 +21,9 @@
 
 package de.bielefeld.umweltamt.aui.module.common.tablemodels;
 
-import de.bielefeld.umweltamt.aui.mappings.atl.AtlParameter;
+import de.bielefeld.umweltamt.aui.mappings.atl.Einheiten;
+import de.bielefeld.umweltamt.aui.mappings.atl.Parameter;
+import de.bielefeld.umweltamt.aui.mappings.elka.MapElkaAnalysemethode;
 import de.bielefeld.umweltamt.aui.utils.tablemodelbase.EditableListTableModel;
 
 /**
@@ -31,7 +33,7 @@ import de.bielefeld.umweltamt.aui.utils.tablemodelbase.EditableListTableModel;
 public class EditorParameterModel extends EditableListTableModel {
 
 	/**
-	 * 
+	 *
 	 */
 	private static final long serialVersionUID = -5048471149489876415L;
 
@@ -39,6 +41,8 @@ public class EditorParameterModel extends EditableListTableModel {
         super(new String[]{
                 "ID",
                 "Parameter",
+                "Analysemethode",
+                "wird gemessen in",
                 "Abwasser-Grenzwert",
                 "Sielhaut-Grenzwert"
         },
@@ -50,7 +54,7 @@ public class EditorParameterModel extends EditableListTableModel {
      */
     @Override
     public Object getColumnValue(Object objectAtRow, int columnIndex) {
-        AtlParameter para = (AtlParameter) objectAtRow;
+    	Parameter para = (Parameter) objectAtRow;
         Object tmp;
 
         switch (columnIndex) {
@@ -61,8 +65,14 @@ public class EditorParameterModel extends EditableListTableModel {
             tmp = para.getBezeichnung();
             break;
         case 2:
-        	return para.getGrenzwert();
+            tmp = para.getMapElkaAnalysemethode();
+            break;
         case 3:
+            tmp = para.getEinheiten();
+            break;
+        case 4:
+        	return para.getGrenzwert();
+        case 5:
         	return para.getSielhautGw();
 
         default:
@@ -79,46 +89,60 @@ public class EditorParameterModel extends EditableListTableModel {
 
 	@Override
 	public void editObject(Object objectAtRow, int columnIndex, Object newValue) {
-		
-		AtlParameter tmp = (AtlParameter) objectAtRow;
+
+		Parameter tmp = (Parameter) objectAtRow;
 		switch (columnIndex) {
         case 0:
         	String tmpID = (String) newValue;
         	tmp.setOrdnungsbegriff(tmpID);
         	break;
-        	
+
         case 1:
         	String tmpArt = (String) newValue;
         	tmp.setBezeichnung(tmpArt);
         	break;
-        	
+
         case 2:
+        	MapElkaAnalysemethode tmpMethode = (MapElkaAnalysemethode) newValue;
+            tmp.setMapElkaAnalysemethode(tmpMethode);
+            break;
+
+        case 3:
+        	Einheiten tmpEinheiten = (Einheiten) newValue;
+            tmp.setEinheiten(tmpEinheiten);
+            break;
+
+        case 4:
         	Double tmpGW = (Double) newValue;
         	tmp.setGrenzwert(tmpGW);
         	break;
-        	
-        case 3:
+
+        case 5:
         	Double tmpSielGW = (Double) newValue;
         	tmp.setSielhautGw(tmpSielGW);
         	break;
 
         default:
-            break;        	
-        	
+            break;
+
 		}
-		AtlParameter.merge(tmp);
+
+		if (tmp.getOrdnungsbegriff() != null) {
+			Parameter.merge(tmp);
+		}
+
 	}
 
 	@Override
 	public Object newObject() {
-		AtlParameter tmp = new AtlParameter();
+		Parameter tmp = new Parameter();
 		return tmp;
 	}
 
     @Override
     public boolean objectRemoved(Object objectAtRow) {
-    	AtlParameter removedPara = (AtlParameter) objectAtRow;
-        return AtlParameter.delete(removedPara);
+    	Parameter removedPara = (Parameter) objectAtRow;
+        return Parameter.delete(removedPara);
     }
 
     /**
@@ -126,8 +150,8 @@ public class EditorParameterModel extends EditableListTableModel {
      * @param rowIndex Die Zeile
      * @return Das Objekt bei rowIndex
      */
-    public AtlParameter getRow(int rowIndex) {
-        return (AtlParameter) getObjectAtRow(rowIndex);
+    public Parameter getRow(int rowIndex) {
+        return (Parameter) getObjectAtRow(rowIndex);
     }
 
 	@Override
@@ -137,19 +161,23 @@ public class EditorParameterModel extends EditableListTableModel {
 	        case 0:
 	            tmp = String.class;
 	            break;
-	
+
 	        case 1:
 	            tmp = String.class;
 	            break;
-	
+
 	        case 2:
-	            tmp = Double.class;
+	        	tmp = MapElkaAnalysemethode.class;
 	            break;
-	
+
 	        case 3:
 	            tmp = Double.class;
 	            break;
-	
+
+	        case 4:
+	            tmp = Double.class;
+	            break;
+
 	        default:
 	            tmp = super.getColumnClass(columnIndex);
 	            break;

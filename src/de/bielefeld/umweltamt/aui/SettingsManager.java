@@ -76,33 +76,24 @@
  */
 package de.bielefeld.umweltamt.aui;
 
-import java.io.BufferedReader;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.PrintStream;
-import java.io.PrintWriter;
-import java.io.Reader;
-import java.io.StringWriter;
-import java.io.Writer;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Enumeration;
-import java.util.List;
+import java.util.Locale;
 import java.util.Properties;
-import java.util.TreeMap;
+import java.util.ResourceBundle;
 
-import de.bielefeld.umweltamt.aui.mappings.basis.BasisLage;
+import de.bielefeld.umweltamt.aui.mappings.basis.Standort;
 import de.bielefeld.umweltamt.aui.utils.AuikLogger;
 import de.bielefeld.umweltamt.aui.utils.SortedProperties;
 
 /**
  * Diese Klasse verwaltet alle Programm-Einstellungen. Alle momentan benutzten
  * Keys: siehe doc/properties.txt
- * 
+ *
  * @author David Klotz
  */
 public class SettingsManager {
@@ -111,11 +102,15 @@ public class SettingsManager {
 	/** GUI Manager */
 	private static final GUIManager guiManager = GUIManager.getInstance();
 
-	private BasisLage standort;
+	private Standort standort;
 	private Properties instanceSettings;
 	private SortedProperties appSettings;
 
 	private static SettingsManager _instance;
+
+	private final Locale locale = new Locale("de", "DE");
+	private static final String DEFAULT_BUNDLE_FILENAME = "auik";
+	private static final String AUIK_PROPERTIES = "auik.properties";
 
 	/**
 	 * Erzeugt einen neuen SettingsManager und initialisiert die Werte der
@@ -131,7 +126,7 @@ public class SettingsManager {
 	 * Liefert den (einzigen) SettingsManager. Wenn diese Methode zum ersten Mal
 	 * aufgerufen wird, wird eine Instanz dieser Klasse erzeugt und
 	 * initialisiert.
-	 * 
+	 *
 	 * @return Eine (evtl. neu erzeugte) Instanz dieser Klasse.
 	 */
 	public static synchronized SettingsManager getInstance() {
@@ -144,7 +139,7 @@ public class SettingsManager {
 
 	/**
 	 * Überschreibt die Settings mit den Werten aus dem EinstellungenEditor
-	 * 
+	 *
 	 * @param instance
 	 *            Eine Settingsmanager Instanz.
 	 * @return boolean True, wenn das Speichern erfolgreich war.
@@ -179,22 +174,16 @@ public class SettingsManager {
 				.setProperty(
 						"auik.system.module",
 
-						"BasisLageSuchen, BasisAdresseSuchen, BasisLageNeu, "
-								+ "BasisAdresseNeu, BasisObjektBearbeiten, EinleiterAnh31Auswertung, "
-								+ "EinleiterAnh40Auswertung, EinleiterAnh49Auswertung, "
-								+ "EinleiterAnh50Auswertung, EinleiterAnh52Auswertung, "
-								+ "EinleiterAnh53Auswertung, EinleiterAnh55Auswertung, "
-								+ "EinleiterAnh56Auswertung, EinleiterBescheidAuswertung, "
-								+ "EinleiterBrennwertAuswertung, EinleiterFettabscheiderAuswertung, "
-								+ "EinleiterGenehmigungAuswertung, EinleiterPrioritaetAuswertung, "
-								+ "EinleiterSuevkanAuswertung, EinleiterUebergabestellenAuswertung, "
-								+ "KlaerschlammAuswertung, KlaerschlammFaulschlammproben, "
-								+ "KlaerschlammRohschlammproben, LaborProbeSuchen, LaborIcpImport, "
-								+ "ProbepunkteAuswertung, SielhautBearbeiten, SielhautImport, "
-								+ "VawsHerstellernummerSuchen, VawsKontrollenAuswertung, "
-								+ "VawsVerwaltungsverfAuswertung, EditorEinheiten, "
-								+ "EditorParameter, EditorStrassen, EditorObjektarten, "
-								+ "AnalyseImport, DBSyncModul");
+						"BasisStandortSuchen, BasisAdresseSuchen, DirekteinleiterSuchen, BasisObjektBearbeiten, BasisAdresseNeu, BasisAuswertung,"
+						+ " AnalyseImport, AwsvChronologieAuswertung, AwsvHerstellernummerSuchen, AwsvKontrollenAuswertung, AwsvVerwaltungsverfAuswertung,"
+						+ " EditorEinheiten, EditorEntsorger, EditorGemarkungen, EditorKlaeranlagen, EditorObjektarten,"
+						+ " EditorParameter, EditorSachbearbeiter, EditorTabStreets, EditorWSG,"
+						+ " EinleiterAnfallstelleAuswertung, EinleiterAnh49Auswertung, EinleiterAnh50Auswertung,"
+						+ " EinleiterAnh56Auswertung, EinleiterBescheidAuswertung, EinleiterBrennwertAuswertung,"
+						+ " EinleiterFettabscheiderAuswertung, EinleiterGenehmigungAuswertung"
+						+ " KlaerschlammAuswertung, KlaerschlammFaulschlammproben, KlaerschlammRohschlammproben,"
+						+ " LaborProbeSuchen, AnalyseImport, ProbepunkteAuswertung, SielhautBearbeiten, SielhautImport"
+						+ " ELKASync");
 
 		appSettings.setProperty("auik.prefs.status_time", "40");
 		appSettings.setProperty("auik.prefs.sielhaut_labor", "Eurofins");
@@ -218,7 +207,7 @@ public class SettingsManager {
 		// appSettings = new SortedProperties();
 
 		try {
-			appSettings.load(new FileInputStream("auik.properties"));
+			appSettings.load(new FileInputStream(AUIK_PROPERTIES));
 		} catch (FileNotFoundException e) {
 			// Wir tun hier nichts. Wenn die Datei nicht gefunden
 			// wird, wird sie halt nicht benutzt
@@ -239,7 +228,7 @@ public class SettingsManager {
 	public void saveSettings() {
 		try {
 
-			appSettings.store(new FileOutputStream("auik.properties"),
+			appSettings.store(new FileOutputStream(AUIK_PROPERTIES),
 					"Allgemeine Einstellungen für " + GUIManager.SHORT_NAME
 							+ " v" + guiManager.getVersion());
 		} catch (IOException e) {
@@ -252,7 +241,7 @@ public class SettingsManager {
 
 	/**
 	 * Setzt eine Einstellung.
-	 * 
+	 *
 	 * @param setting
 	 *            Den Key der Einstellung.
 	 * @param value
@@ -271,7 +260,7 @@ public class SettingsManager {
 	/**
 	 * Setzt eine Einstellung. Wrapper-Methode für setSetting(String, String,
 	 * boolean).
-	 * 
+	 *
 	 * @param setting
 	 *            Den Key der Einstellung.
 	 * @param value
@@ -286,7 +275,7 @@ public class SettingsManager {
 	/**
 	 * Setzt eine Einstellung. Wrapper-Methode für setSetting(String, String,
 	 * boolean).
-	 * 
+	 *
 	 * @param setting
 	 *            Den Key der Einstellung.
 	 * @param value
@@ -300,8 +289,8 @@ public class SettingsManager {
 
 	/**
 	 * Setzt eine Einstellung. Wrapper-Methode für setSetting(String,
-	 * BasisLage, boolean).
-	 * 
+	 * Lage, boolean).
+	 *
 	 * @param setting
 	 *            Den Key der Einstellung.
 	 * @param value
@@ -309,13 +298,13 @@ public class SettingsManager {
 	 * @param persist
 	 *            Soll die Einstellung beim Programm-Ende gespeichert werden.
 	 */
-	public void setStandort(BasisLage std) {
+	public void setStandort(Standort std) {
 		this.standort = std;
 	}
 
 	/**
 	 * Liefert alle Einstellungen.
-	 * 
+	 *
 	 * @return Liste aller Einstellungen.
 	 */
 	public String[][] getSettingList() {
@@ -340,7 +329,7 @@ public class SettingsManager {
 
 	/**
 	 * Liefert den aktuellen Wert einer Einstellung.
-	 * 
+	 *
 	 * @param setting
 	 *            Den Key der Einstellung.
 	 * @return Den Wert der Einstellung oder <code>null</code>, falls diese
@@ -356,7 +345,7 @@ public class SettingsManager {
 
 	/**
 	 * Liefert den aktuellen Wert einer Einstellung. Wrapper-Methode.
-	 * 
+	 *
 	 * @param setting
 	 *            Den Key der Einstellung.
 	 * @return Den Wert der Einstellung oder -1, falls diese nicht existiert.
@@ -376,7 +365,7 @@ public class SettingsManager {
 
 	/**
 	 * Liefert den aktuellen Wert einer Einstellung. Wrapper-Methode.
-	 * 
+	 *
 	 * @param setting
 	 *            Den Key der Einstellung.
 	 * @return Den Wert der Einstellung oder <code>false</code>, falls diese
@@ -393,13 +382,13 @@ public class SettingsManager {
 
 	/**
 	 * Liefert den aktuellen Wert einer Einstellung. Wrapper-Methode.
-	 * 
+	 *
 	 * @param setting
 	 *            Den Key der Einstellung.
 	 * @return Den Wert der Einstellung oder <code>false</code>, falls diese
 	 *         nicht existiert.
 	 */
-	public BasisLage getStandort() {
+	public Standort getStandort() {
 
 		return standort;
 
@@ -415,8 +404,22 @@ public class SettingsManager {
 	}
 
 	/**
+	 * Get the i18n resource bundle specified in the settings.
+	 *
+	 * If not set, fall back to the default "auik_*.properties"
+	 * @return Resource bundle
+	 */
+	public ResourceBundle getI18nBundle() {
+		String bundlePath = "de.bielefeld.umweltamt.aui.resources.";
+		String bundleFileName = getSetting("auik.i18n_file") != null
+		? getSetting("auik.i18n_file") : DEFAULT_BUNDLE_FILENAME;
+		String bundleName = bundlePath + bundleFileName;
+		return ResourceBundle.getBundle(bundleName, locale);
+	}
+
+	/**
 	 * Entfernt eine Einstellung komplett.
-	 * 
+	 *
 	 * @param setting
 	 *            Den Key der Einstellung.
 	 */

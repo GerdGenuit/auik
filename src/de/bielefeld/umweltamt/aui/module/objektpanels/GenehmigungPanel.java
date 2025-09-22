@@ -35,6 +35,7 @@ import javax.swing.AbstractAction;
 import javax.swing.Action;
 import javax.swing.JButton;
 import javax.swing.JCheckBox;
+import javax.swing.JComponent;
 import javax.swing.JFormattedTextField;
 import javax.swing.JMenuItem;
 import javax.swing.JPanel;
@@ -42,21 +43,22 @@ import javax.swing.JPopupMenu;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
 import javax.swing.JTextArea;
+import javax.swing.JTextField;
 import javax.swing.KeyStroke;
 import javax.swing.ScrollPaneConstants;
 
 import com.jgoodies.forms.builder.DefaultFormBuilder;
-import com.jgoodies.forms.factories.ButtonBarFactory;
 import com.jgoodies.forms.layout.FormLayout;
 
 import de.bielefeld.umweltamt.aui.GUIManager;
 import de.bielefeld.umweltamt.aui.HauptFrame;
-import de.bielefeld.umweltamt.aui.mappings.basis.BasisObjektverknuepfung;
-import de.bielefeld.umweltamt.aui.mappings.elka.ElkaWasserrecht;
+import de.bielefeld.umweltamt.aui.mappings.basis.Objektverknuepfung;
+import de.bielefeld.umweltamt.aui.mappings.elka.Wasserrecht;
 import de.bielefeld.umweltamt.aui.module.BasisObjektBearbeiten;
 import de.bielefeld.umweltamt.aui.module.common.ObjektChooser;
 import de.bielefeld.umweltamt.aui.module.common.tablemodels.ObjektVerknuepfungModel;
 import de.bielefeld.umweltamt.aui.utils.AuikLogger;
+import de.bielefeld.umweltamt.aui.utils.ComponentFactory;
 import de.bielefeld.umweltamt.aui.utils.IntegerField;
 import de.bielefeld.umweltamt.aui.utils.LimitedTextArea;
 import de.bielefeld.umweltamt.aui.utils.TextFieldDateChooser;
@@ -65,7 +67,7 @@ import de.bielefeld.umweltamt.aui.utils.TextFieldDateChooser;
  * Das "Genehmigung"-Tab des BasisObjektBearbeiten-Moduls
  * @author Gerd Genuit
  */
-public class GenehmigungPanel extends JPanel {
+public class GenehmigungPanel extends ObjectPanel{
     private static final long serialVersionUID = -1132786436313164359L;
 
     /** Logging */
@@ -76,7 +78,9 @@ public class GenehmigungPanel extends JPanel {
 
     // Widgets
 
+    private JTextField aktenzeichenFeld = null;
     private JTextArea genBemerkungArea = null;
+    private JTextArea nebenbestArea =null;
     private TextFieldDateChooser antragsDatum = null;
     private TextFieldDateChooser genehmigungsDatum = null;
     private TextFieldDateChooser aenderungsDatum = null;
@@ -86,16 +90,15 @@ public class GenehmigungPanel extends JPanel {
     private JCheckBox befristetCheck = null;
     private JCheckBox gen58Check = null;
     private JCheckBox gen59Check = null;
+    private JCheckBox gen8Check = null;
     private JCheckBox selbstueberwCheck = null;
     private JCheckBox eSatzungCheck = null;
-    private IntegerField uebergabestelleE32Field = null;
-    private IntegerField uebergabestelleN32Field = null;
 
     private JButton saveGenehmigungButton = null;
 
     // Daten
 
-    private ElkaWasserrecht fachdaten = null;
+    private Wasserrecht fachdaten = null;
 
     // Objektverknuepfer
     private ObjektVerknuepfungModel objektVerknuepfungModel;
@@ -109,35 +112,42 @@ public class GenehmigungPanel extends JPanel {
         this.hauptModul = hauptModul;
 
         FormLayout layout = new FormLayout(
-            "r:80dlu, 5dlu, 80dlu, 5dlu, r:35dlu, 5dlu, 80dlu", // Spalten
+            "r:80dlu, 5dlu, 90dlu, 5dlu, r:20dlu, 5dlu, 120dlu", // Spalten
             "");
 
         DefaultFormBuilder builder = new DefaultFormBuilder(layout, this);
-        builder.setDefaultDialogBorder();
 
         builder.appendSeparator("Fachdaten");
-        builder.append("Antragsdatum:", getAntragsDatum());
+        builder.append("Aktenzeichen:", getAktenzeichenFeld());
         builder.append("", getGen58CheckBox());
         builder.nextLine();
-        builder.append("Genehmigungsdatum:", getGenehmigungsDatum());
+        builder.append("Antragsdatum:", getAntragsDatum());
         builder.append("", getGen59CheckBox());
         builder.nextLine();
+        builder.append("Genehmigungsdatum:", getGenehmigungsDatum());
+        builder.append("", getGen8CheckBox());
+        builder.nextLine();
         builder.append("Änderungsdatum:", getAenderungsDatum());
-        builder.append("", getSelbCheckBox());
         builder.nextLine();
         builder.append("Anhang:", getAnhangFeld());
-        builder.append("", getEsaCheckBox());
+        builder.append("", getSelbCheckBox());
         builder.nextLine();
         builder.append("Genehmigte Menge [m³]:", getGenMengeFeld());
-        builder.append("", getBefCheckBox());
+        builder.append("", getEsaCheckBox());
         builder.nextLine();
-        builder.append("");
-        builder.append("");
+        builder.append("Genehmigung befristet:", getBefCheckBox());
         builder.append("bis:", getBefristetDatum());
+
         builder.nextLine();
-        builder.appendSeparator("Übergabestelle");
-        builder.append("E32:", this.getUebergabestelleE32Field());
-        builder.append("N32:",   this.getUebergabestelleN32Field());
+        builder.appendSeparator("Nebenbestimmungen");
+        builder.appendRow("3dlu");
+        builder.nextLine(2);
+        JScrollPane nebenbestScroller = new JScrollPane(getNebenbestArea(),
+                ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED,
+                ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
+        builder.appendRow("fill:30dlu");
+        builder.append(nebenbestScroller, 7);
+
         builder.nextLine();
         builder.appendSeparator("Bemerkungen");
         builder.appendRow("3dlu");
@@ -147,28 +157,31 @@ public class GenehmigungPanel extends JPanel {
             ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
         builder.appendRow("fill:30dlu");
         builder.append(bemerkungsScroller, 7);
-        builder.nextLine();
 
+        builder.nextLine();
         builder.appendSeparator("Verknüpfte Objekte");
         builder.appendRow("3dlu");
         builder.nextLine(2);
-        JScrollPane objektverknuepfungScroller = new JScrollPane(
-            getObjektverknuepungTabelle(),
-            ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED,
-            ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
-        builder.appendRow("fill:100dlu");
-        builder.append(objektverknuepfungScroller, 7);
-        builder.nextLine();
+		JScrollPane objektverknuepfungScroller = new JScrollPane(getObjektverknuepungTabelle(),
+				ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED, ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
+		builder.appendRow("fill:100dlu");
+		builder.append(objektverknuepfungScroller, 7);
+		builder.nextLine();
 
-        JPanel buttonBar = ButtonBarFactory.buildRightAlignedBar(
+        JComponent buttonBar = ComponentFactory.buildRightAlignedBar(
             getSelectObjektButton(), getsaveGenehmigungButton());
 
         builder.append(buttonBar, 7);
+        addChangeListeners(getAktenzeichenFeld(), getGenBemerkungArea(),
+            getNebenbestArea(), getAnhangFeld(), getGenMengeFeld(), getAntragsDatum(),
+            getAenderungsDatum(), getGenehmigungsDatum(), getBefristetDatum(), getBefCheckBox(),
+            getGen58CheckBox(), getGen59CheckBox(), getGen8CheckBox(), getSelbCheckBox(),
+            getEsaCheckBox());
     }
 
     public void fetchFormData() throws RuntimeException {
-        this.fachdaten = ElkaWasserrecht.findByObjektId(
-            this.hauptModul.getObjekt().getObjektid());
+        this.fachdaten = Wasserrecht.findByObjektId(
+            this.hauptModul.getObjekt());
         log.debug("Genehmigung Objekt aus DB geholt: ID" + this.fachdaten);
     }
 
@@ -176,9 +189,17 @@ public class GenehmigungPanel extends JPanel {
 
         if (this.fachdaten != null) {
 
+            if (this.fachdaten.getAktenzeichen() != null) {
+                getAktenzeichenFeld().setText(this.fachdaten.getAktenzeichen());
+            }
             if (this.fachdaten.getBemerkungen() != null) {
                 getGenBemerkungArea().setText(this.fachdaten.getBemerkungen());
             }
+
+            if (this.fachdaten.getNebenbest() != null) {
+            	getNebenbestArea().setText(this.fachdaten.getNebenbest());
+            }
+
             if (this.fachdaten.getAnhang() != null) {
                 getAnhangFeld().setText(this.fachdaten.getAnhang().toString());
             }
@@ -221,6 +242,13 @@ public class GenehmigungPanel extends JPanel {
                     getGen59CheckBox().setSelected(false);
                 }
             }
+            if (this.fachdaten.getGen8() != null) {
+                if (this.fachdaten.getGen8() == true) {
+                    getGen8CheckBox().setSelected(true);
+                } else {
+                    getGen8CheckBox().setSelected(false);
+                }
+            }
             if (this.fachdaten.getSelbstueberw() != null) {
                 if (this.fachdaten.getSelbstueberw() == true) {
                     getSelbCheckBox().setSelected(true);
@@ -235,22 +263,16 @@ public class GenehmigungPanel extends JPanel {
                     getEsaCheckBox().setSelected(false);
                 }
             }
-            if (this.fachdaten.getUebergabestelleE32() != null) {
-                this.getUebergabestelleE32Field().setValue(
-                    this.fachdaten.getUebergabestelleE32());
-            }
-            if (this.fachdaten.getUebergabestelleN32() != null) {
-                this.getUebergabestelleN32Field().setValue(
-                    this.fachdaten.getUebergabestelleN32());
-            }
             this.objektVerknuepfungModel.setObjekt(this.hauptModul.getObjekt());
 
         }
-
+        setDirty(false);
     }
 
     public void clearForm() {
+    	getAktenzeichenFeld().setText(null);
         getGenBemerkungArea().setText(null);
+        getNebenbestArea().setText(null);
         getAnhangFeld().setText(null);
         getGenMengeFeld().setText(null);
         getAntragsDatum().setDate(null);
@@ -260,14 +282,15 @@ public class GenehmigungPanel extends JPanel {
         getBefCheckBox().setSelected(false);
         getGen58CheckBox().setSelected(false);
         getGen59CheckBox().setSelected(false);
+        getGen8CheckBox().setSelected(false);
         getSelbCheckBox().setSelected(false);
         getEsaCheckBox().setSelected(false);
-        getUebergabestelleE32Field().setValue(null);
-        getUebergabestelleN32Field().setValue(null);
     }
 
     public void enableAll(boolean enabled) {
+    	getAktenzeichenFeld().setEnabled(enabled);
         getGenBemerkungArea().setEnabled(enabled);
+        getNebenbestArea().setEnabled(enabled);
         getAnhangFeld().setEnabled(enabled);
         getGenMengeFeld().setEnabled(enabled);
         getAntragsDatum().setEnabled(enabled);
@@ -277,20 +300,32 @@ public class GenehmigungPanel extends JPanel {
         getBefCheckBox().setEnabled(enabled);
         getGen58CheckBox().setEnabled(enabled);
         getGen59CheckBox().setEnabled(enabled);
+        getGen8CheckBox().setEnabled(enabled);
         getSelbCheckBox().setEnabled(enabled);
         getEsaCheckBox().setEnabled(enabled);
-        getUebergabestelleE32Field().setEnabled(enabled);
-        getUebergabestelleN32Field().setEnabled(enabled);
     }
 
-    private boolean saveGenehmigungDaten() {
+    protected boolean doSavePanelData() {
         boolean success;
 
+        String aktenzeichen = this.aktenzeichenFeld.getText();
+        if ("".equals(aktenzeichen)) {
+            this.fachdaten.setAktenzeichen(null);
+        } else {
+            this.fachdaten.setAktenzeichen(aktenzeichen);
+        }
         String bemerkungen = this.genBemerkungArea.getText();
         if ("".equals(bemerkungen)) {
             this.fachdaten.setBemerkungen(null);
         } else {
             this.fachdaten.setBemerkungen(bemerkungen);
+        }
+
+        String nebenbest = this.nebenbestArea.getText();
+        if ("".equals(nebenbest)) {
+            this.fachdaten.setNebenbest(null);
+        } else {
+            this.fachdaten.setNebenbest(nebenbest);
         }
 
         Date antrag = this.antragsDatum.getDate();
@@ -329,6 +364,12 @@ public class GenehmigungPanel extends JPanel {
             this.fachdaten.setGen59(false);
         }
 
+        if (getGen8CheckBox().isSelected()) {
+            this.fachdaten.setGen8(true);
+        } else {
+            this.fachdaten.setGen8(false);
+        }
+
         if (getSelbCheckBox().isSelected()) {
             this.fachdaten.setSelbstueberw(true);
         } else {
@@ -340,14 +381,10 @@ public class GenehmigungPanel extends JPanel {
         } else {
             this.fachdaten.setESatzung(false);
         }
-        this.fachdaten.setUebergabestelleE32(
-            this.getUebergabestelleE32Field().getIntValue());
-        this.fachdaten.setUebergabestelleN32(
-            this.getUebergabestelleN32Field().getIntValue());
 
         success = this.fachdaten.merge();
         if (success) {
-            log.debug("Uebergabestelle Objekt " + this.fachdaten.getObjektid()
+            log.debug("Uebergabestelle Objekt " + this.fachdaten.getId()
                 + " gespeichert.");
         } else {
             log.debug("Uebergabestelle Objekt " + this.fachdaten
@@ -359,12 +396,12 @@ public class GenehmigungPanel extends JPanel {
     public void completeObjekt() {
         if (this.hauptModul.isNew() || this.fachdaten == null) {
             // Neues Genehmigung Objekt erzeugen
-            this.fachdaten = new ElkaWasserrecht();
+            this.fachdaten = new Wasserrecht();
             // Objekt_Id setzen
-            this.fachdaten.setBasisObjekt(this.hauptModul.getObjekt());
+            this.fachdaten.setObjekt(this.hauptModul.getObjekt());
 
             // Uebergabestelle speichern
-            this.fachdaten = ElkaWasserrecht.merge(this.fachdaten);
+            this.fachdaten = Wasserrecht.merge(this.fachdaten);
             log.debug("Neues Genehmigung Objekt " + this.fachdaten
                 + " gespeichert.");
         }
@@ -378,12 +415,12 @@ public class GenehmigungPanel extends JPanel {
                 @Override
                 public void actionPerformed(ActionEvent e) {
                     enableAll(false);
-                    if (saveGenehmigungDaten()) {
+                    if (hauptModul.saveAllTabs()) {
                         GenehmigungPanel.this.hauptModul.getFrame()
                             .changeStatus(
                                 "Genehmigung "
                                     + GenehmigungPanel.this.fachdaten
-                                        .getObjektid()
+                                        .getId()
                                     + " erfolgreich gespeichert.",
                                 HauptFrame.SUCCESS_COLOR);
                     } else {
@@ -404,6 +441,13 @@ public class GenehmigungPanel extends JPanel {
     @Override
     public String getName() {
         return this.name;
+    }
+
+    private JTextField getAktenzeichenFeld() {
+        if (this.aktenzeichenFeld == null) {
+            this.aktenzeichenFeld = new JTextField();
+        }
+        return this.aktenzeichenFeld;
     }
 
     private TextFieldDateChooser getAntragsDatum() {
@@ -450,23 +494,30 @@ public class GenehmigungPanel extends JPanel {
 
     private JCheckBox getBefCheckBox() {
         if (this.befristetCheck == null) {
-            this.befristetCheck = new JCheckBox("Genehmigung befristet");
+            this.befristetCheck = new JCheckBox();
         }
         return this.befristetCheck;
     }
 
     private JCheckBox getGen58CheckBox() {
         if (this.gen58Check == null) {
-            this.gen58Check = new JCheckBox("58er Genehmigung");
+            this.gen58Check = new JCheckBox("Abwasserbehandlungsanlage");
         }
         return this.gen58Check;
     }
 
     private JCheckBox getGen59CheckBox() {
         if (this.gen59Check == null) {
-            this.gen59Check = new JCheckBox("59er Genehmigung");
+            this.gen59Check = new JCheckBox("Indirekteinleitung");
         }
         return this.gen59Check;
+    }
+
+    private JCheckBox getGen8CheckBox() {
+        if (this.gen8Check == null) {
+            this.gen8Check = new JCheckBox("Direkteinleitung");
+        }
+        return this.gen8Check;
     }
 
     private JCheckBox getSelbCheckBox() {
@@ -492,19 +543,15 @@ public class GenehmigungPanel extends JPanel {
         return this.genBemerkungArea;
     }
 
-    private IntegerField getUebergabestelleE32Field() {
-        if (this.uebergabestelleE32Field == null) {
-            this.uebergabestelleE32Field = new IntegerField();
+    private JTextArea getNebenbestArea() {
+        if (this.nebenbestArea == null) {
+            this.nebenbestArea = new LimitedTextArea(150);
+            this.nebenbestArea.setLineWrap(true);
+            this.nebenbestArea.setWrapStyleWord(true);
         }
-        return this.uebergabestelleE32Field;
+        return this.nebenbestArea;
     }
 
-    private IntegerField getUebergabestelleN32Field() {
-        if (this.uebergabestelleN32Field == null) {
-            this.uebergabestelleN32Field = new IntegerField();
-        }
-        return this.uebergabestelleN32Field;
-    }
 
     private JTable getObjektverknuepungTabelle() {
 
@@ -536,18 +583,18 @@ public class GenehmigungPanel extends JPanel {
                                 origin);
 
                             if (row != -1) {
-                                BasisObjektverknuepfung obj = GenehmigungPanel.this.objektVerknuepfungModel
+                                Objektverknuepfung obj = GenehmigungPanel.this.objektVerknuepfungModel
                                     .getRow(row);
-                                if (obj.getBasisObjektByIstVerknuepftMit()
-                                    .getObjektid().intValue() != GenehmigungPanel.this.hauptModul
-                                    .getObjekt().getObjektid().intValue())
+                                if (obj.getObjektByIstVerknuepftMit()
+                                    .getId().intValue() != GenehmigungPanel.this.hauptModul
+                                    .getObjekt().getId().intValue())
                                     GenehmigungPanel.this.hauptModul
                                         .getManager()
                                         .getSettingsManager()
                                         .setSetting(
                                             "auik.imc.edit_object",
-                                            obj.getBasisObjektByIstVerknuepftMit()
-                                                .getObjektid().intValue(),
+                                            obj.getObjektByIstVerknuepftMit()
+                                                .getId().intValue(),
                                             false);
                                 else
                                     GenehmigungPanel.this.hauptModul
@@ -555,8 +602,8 @@ public class GenehmigungPanel extends JPanel {
                                         .getSettingsManager()
                                         .setSetting(
                                             "auik.imc.edit_object",
-                                            obj.getBasisObjektByObjekt()
-                                                .getObjektid().intValue(),
+                                            obj.getObjektByObjekt()
+                                                .getId().intValue(),
                                             false);
                                 GenehmigungPanel.this.hauptModul.getManager()
                                     .switchModul("m_objekt_bearbeiten");
@@ -618,7 +665,7 @@ public class GenehmigungPanel extends JPanel {
                     int row = getObjektverknuepungTabelle().getSelectedRow();
                     if (row != -1
                         && getObjektverknuepungTabelle().getEditingRow() == -1) {
-                        BasisObjektverknuepfung verknuepfung = GenehmigungPanel.this.objektVerknuepfungModel
+                        Objektverknuepfung verknuepfung = GenehmigungPanel.this.objektVerknuepfungModel
                             .getRow(row);
                         if (GUIManager.getInstance().showQuestion(
                             "Soll die Verknüpfung wirklich gelöscht werden?\n"
@@ -661,7 +708,7 @@ public class GenehmigungPanel extends JPanel {
                 public void actionPerformed(ActionEvent e) {
                     ObjektChooser chooser = new ObjektChooser(
                         GenehmigungPanel.this.hauptModul.getFrame(),
-                        GenehmigungPanel.this.fachdaten.getBasisObjekt(),
+                        GenehmigungPanel.this.fachdaten.getObjekt(),
                         GenehmigungPanel.this.objektVerknuepfungModel);
                     chooser.setVisible(true);
                 }

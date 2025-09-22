@@ -27,7 +27,7 @@ import org.hibernate.criterion.DetachedCriteria;
 import org.hibernate.criterion.Order;
 
 import de.bielefeld.umweltamt.aui.HibernateSessionFactory;
-import de.bielefeld.umweltamt.aui.mappings.elka.ElkaAbaverfahren;
+import de.bielefeld.umweltamt.aui.mappings.elka.Abaverfahren;
 import de.bielefeld.umweltamt.aui.utils.AuikLogger;
 
 /**
@@ -46,11 +46,16 @@ import de.bielefeld.umweltamt.aui.utils.AuikLogger;
 public abstract class DatabaseQuery extends DatabaseAtlQuery {
 // Essentially this is somewhat like this:
 // DatabaseQuery extends DatabaseAtlQuery, DatabaseBasisQuery,
-//                       DatabaseIndeinlQuery, DatabaseVawsQuery,
-//                       DatabaseTipiQuery
+//                       DatabaseIndeinlQuery, DatabaseAwSVQuery,
+//                       DatabaseDirekteinlQuery
 
     /** Logging */
     private static final AuikLogger log = AuikLogger.getLogger();
+
+	//Separator char used to split address strings
+	public static final String ADDRESS_SEPARATOR = "%";
+    //String used as placeholder for empty house numbers
+    public static final String HOUSE_NUMBER_PLACEHOLDER = "-1";
 
     /* ********************************************************************** */
     /* General Queries for all packages                                       */

@@ -60,11 +60,12 @@ import javax.swing.JButton;
 import javax.swing.JComponent;
 import javax.swing.JDialog;
 import javax.swing.JPanel;
+import javax.swing.JScrollPane;
 
-import com.jgoodies.forms.factories.Borders;
-import com.jgoodies.forms.factories.ButtonBarFactory;
+import com.jgoodies.forms.factories.Paddings;
 
 import de.bielefeld.umweltamt.aui.HauptFrame;
+import de.bielefeld.umweltamt.aui.utils.ComponentFactory;
 
 /**
  * Eine Grundlage für einen einfachen Dialog mit einem, zwei oder drei Buttons.
@@ -84,7 +85,7 @@ public abstract class SimpleDialog extends JDialog {
     protected boolean twoButtons = false;
     protected boolean threeButtons = false;
 
-    protected JPanel buttonBar;
+    protected JComponent buttonBar;
     protected JButton button1, button2, button3;
 
     public SimpleDialog(HauptFrame frame) {
@@ -106,10 +107,10 @@ public abstract class SimpleDialog extends JDialog {
         }
 
         JPanel tmp = new JPanel(new BorderLayout());
-        tmp.setBorder(Borders.DIALOG_BORDER);
+        tmp.setBorder(Paddings.DIALOG);
 
         buttonBar = createButtonBar();
-        buttonBar.setBorder(Borders.BUTTON_BAR_GAP_BORDER);
+        buttonBar.setBorder(Paddings.BUTTON_BAR_PAD);
 
         JComponent content = buildContentArea();
         tmp.add(content, BorderLayout.CENTER);
@@ -117,7 +118,8 @@ public abstract class SimpleDialog extends JDialog {
         tmp.add(buttonBar, BorderLayout.SOUTH);
 
         this.addWindowListener(new SimpleDialogListener());
-        this.setContentPane(tmp);
+        JScrollPane scroller = new JScrollPane(tmp);
+        this.setContentPane(scroller);
         this.pack();
         this.setLocationRelativeTo(frame);
     }
@@ -129,15 +131,15 @@ public abstract class SimpleDialog extends JDialog {
      *
      * @return ein {@link javax.swing.JPanel} mit {@link javax.swing.JButton}s.
      */
-    protected JPanel createButtonBar() {
+    protected JComponent createButtonBar() {
         if (threeButtons) {
-            return ButtonBarFactory.buildOKCancelApplyBar(button1, button2, button3);
+            return ComponentFactory.buildOKCancelApplyBar(button1, button2, button3);
         }
         else if (twoButtons) {
-            return ButtonBarFactory.buildOKCancelBar(button1, button2);
+            return ComponentFactory.buildOKCancelBar(button1, button2);
         }
         else {
-           return ButtonBarFactory.buildOKBar(button1);
+           return ComponentFactory.buildOKBar(button1);
         }
     }
 

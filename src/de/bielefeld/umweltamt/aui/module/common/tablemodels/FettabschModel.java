@@ -22,6 +22,9 @@
 package de.bielefeld.umweltamt.aui.module.common.tablemodels;
 
 import de.bielefeld.umweltamt.aui.mappings.DatabaseQuery;
+import de.bielefeld.umweltamt.aui.mappings.basis.Adresse;
+import de.bielefeld.umweltamt.aui.mappings.basis.Inhaber;
+import de.bielefeld.umweltamt.aui.mappings.elka.Anfallstelle;
 import de.bielefeld.umweltamt.aui.mappings.indeinl.Anh49Abscheiderdetails;
 import de.bielefeld.umweltamt.aui.mappings.indeinl.Anh49Fachdaten;
 import de.bielefeld.umweltamt.aui.utils.StringUtils;
@@ -37,11 +40,12 @@ public class FettabschModel extends ListTableModel {
         super(new String[]{
                 "Betreiber",
                 "Standort",
-                "Bemerkungen",
-                "Genehmigungsdatum",
-                "Abfuhrdatum",
-                "nächste Abfuhr",
-                "letztes Chrono-Datum"
+                "Entwässerungsgebiet",
+                "Sachbearbeiter:in",
+                "Bemerkungen (Fettabscheider)",
+                "Beschreibung (Objekt)",
+                "Wiedervorlage (Objekt)",
+                "letzte Änderung (Chronologie)"
         },
         false);
     }
@@ -51,39 +55,42 @@ public class FettabschModel extends ListTableModel {
      */
 	@Override
     public Object getColumnValue(Object objectAtRow, int columnIndex) {
-		Anh49Fachdaten fd = (Anh49Fachdaten) objectAtRow;
+		Anfallstelle fd = (Anfallstelle) objectAtRow;
 		Object tmp = null;
+		Inhaber inh = fd.getObjekt().getStandortid().getInhaber();
+		Adresse addr = inh != null ? inh.getAdresse() : null;
 		switch (columnIndex) {
     		case 0:
-    			tmp = fd.getBasisObjekt().getBasisAdresse();
+    			tmp = fd.getObjekt().getBetreiberid();
     			break;
     		case 1:
-    			tmp = DatabaseQuery.getStandortString(fd.getBasisObjekt().getBasisStandort());
+    			tmp = DatabaseQuery.getStandortString(fd.getObjekt().getStandortid());
     			break;
     		case 2:
-    			tmp = fd.getBemerkungen();
+    			tmp= addr != null ? addr.getEntgebid() : "";
     			break;
     		case 3:
-    			tmp = fd.getGenehmigung();
-    			break;
+            	tmp= fd.getObjekt().getSachbearbeiter();
+                break;
     		case 4:
-    			tmp = DatabaseQuery.getLastAbfuhrDateForObjekt(
-    		    		fd);
+    			tmp = fd.getAnh49Fachdatens().iterator().next().getBemerkungen();
     			break;
     		case 5:
-    			tmp = DatabaseQuery.getNextAbfuhrDateForObjekt(
-    		    		fd);
+    			tmp= fd.getObjekt().getBeschreibung();
     			break;
     		case 6:
+    			tmp = fd.getObjekt().getWiedervorlage();
+    			break;
+    		case 7:
     		    tmp = DatabaseQuery.getLastChronoDateForObjekt(
-    		    		fd.getBasisObjekt());
+    		    		fd.getObjekt());
     		    break;
     		default:
     			tmp = "ERROR";
 		}
 
 		if (tmp != null &&
-			fd.getBasisObjekt().isInaktiv()) {
+			fd.getObjekt().isInaktiv()) {
             tmp = StringUtils.setStrike(tmp.toString());
 		}
 		return tmp;

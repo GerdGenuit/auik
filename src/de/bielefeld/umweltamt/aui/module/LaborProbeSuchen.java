@@ -88,13 +88,14 @@ import javax.swing.ListSelectionModel;
 import javax.swing.ScrollPaneConstants;
 
 import com.jgoodies.forms.builder.PanelBuilder;
+import com.jgoodies.forms.factories.Paddings;
 import com.jgoodies.forms.layout.CellConstraints;
 import com.jgoodies.forms.layout.FormLayout;
 
 import de.bielefeld.umweltamt.aui.AbstractModul;
 import de.bielefeld.umweltamt.aui.GUIManager;
 import de.bielefeld.umweltamt.aui.HauptFrame;
-import de.bielefeld.umweltamt.aui.mappings.atl.AtlProbenahmen;
+import de.bielefeld.umweltamt.aui.mappings.atl.Probenahme;
 import de.bielefeld.umweltamt.aui.module.common.editors.ProbenEditor;
 import de.bielefeld.umweltamt.aui.module.common.tablemodels.ProbenahmenModel;
 import de.bielefeld.umweltamt.aui.utils.AuikLogger;
@@ -127,7 +128,7 @@ public class LaborProbeSuchen extends AbstractModul {
 
     private String lastSuche;
     private String lastProperty;
-    private AtlProbenahmen lastProbe;
+    private Probenahme lastProbe;
 
     /*
      * @see de.bielefeld.umweltamt.aui.Modul#getName()
@@ -192,7 +193,6 @@ public class LaborProbeSuchen extends AbstractModul {
                 "pref, 3dlu, f:150dlu:grow"); // zeilen
 
             PanelBuilder builder = new PanelBuilder(layout);
-            builder.setDefaultDialogBorder();
             CellConstraints cc = new CellConstraints();
 
             builder.add(getSuchBox(), cc.xy(1, 1));
@@ -201,6 +201,7 @@ public class LaborProbeSuchen extends AbstractModul {
             builder.add(probeScroller, cc.xyw(1, 3, 5));
 
             this.panel = builder.getPanel();
+            this.panel.setBorder(Paddings.DIALOG);
         }
         return this.panel;
     }
@@ -220,7 +221,7 @@ public class LaborProbeSuchen extends AbstractModul {
      * Suchfeld aus.
      */
     public void clearForm() {
-        this.probeModel.setList(new ArrayList<AtlProbenahmen>());
+        this.probeModel.setList(new ArrayList<Probenahme>());
         this.probeModel.fireTableDataChanged();
 
         getSuchFeld().selectAll();
@@ -231,7 +232,7 @@ public class LaborProbeSuchen extends AbstractModul {
      * öffnet einen Dialog um einen Probenahmen-Datensatz zu bearbeiten.
      * @param probe Die Probe.
      */
-    public void editProbe(AtlProbenahmen probe) {
+    public void editProbe(Probenahme probe) {
         // BetreiberEditor editDialog = new BetreiberEditor(betr, frame,
         // manager);
         ProbenEditor editor = new ProbenEditor(probe, this.frame, false);
@@ -316,7 +317,7 @@ public class LaborProbeSuchen extends AbstractModul {
                     // Natürlich nur editieren, wenn wirklich eine Zeile
                     // ausgewählt ist
                     if (row != -1) {
-                        AtlProbenahmen probe = LaborProbeSuchen.this.probeModel
+                        Probenahme probe = LaborProbeSuchen.this.probeModel
                             .getRow(row);
                         editProbe(probe);
                     }
@@ -340,7 +341,7 @@ public class LaborProbeSuchen extends AbstractModul {
                 public void actionPerformed(ActionEvent e) {
                     int row = getProbeTabelle().getSelectedRow();
                     if (row != -1 && getProbeTabelle().getEditingRow() == -1) {
-                        AtlProbenahmen probe = LaborProbeSuchen.this.probeModel
+                        Probenahme probe = LaborProbeSuchen.this.probeModel
                             .getRow(row);
 
                         if (GUIManager.getInstance().showQuestion(
@@ -421,7 +422,7 @@ public class LaborProbeSuchen extends AbstractModul {
                             Point origin = e.getPoint();
                             int row = getProbeTabelle().rowAtPoint(origin);
 
-                            AtlProbenahmen probe = LaborProbeSuchen.this.probeModel
+                            Probenahme probe = LaborProbeSuchen.this.probeModel
                                 .getRow(row);
                             log.debug("Doppelklick auf Zeile " + row);
                             editProbe(probe);

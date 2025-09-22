@@ -125,8 +125,7 @@ import org.jfree.data.time.TimeSeries;
 import org.jfree.data.time.TimeSeriesCollection;
 
 import com.jgoodies.forms.builder.PanelBuilder;
-import com.jgoodies.forms.factories.Borders;
-import com.jgoodies.forms.factories.ButtonBarFactory;
+import com.jgoodies.forms.factories.Paddings;
 import com.jgoodies.forms.layout.CellConstraints;
 import com.jgoodies.forms.layout.FormLayout;
 import com.toedter.calendar.JDateChooser;
@@ -136,14 +135,15 @@ import de.bielefeld.umweltamt.aui.GUIManager;
 import de.bielefeld.umweltamt.aui.HauptFrame;
 import de.bielefeld.umweltamt.aui.mappings.DatabaseConstants;
 import de.bielefeld.umweltamt.aui.mappings.DatabaseQuery;
-import de.bielefeld.umweltamt.aui.mappings.atl.AtlAnalyseposition;
-import de.bielefeld.umweltamt.aui.mappings.atl.AtlEinheiten;
-import de.bielefeld.umweltamt.aui.mappings.atl.AtlKlaeranlagen;
-import de.bielefeld.umweltamt.aui.mappings.atl.AtlParameter;
-import de.bielefeld.umweltamt.aui.mappings.atl.AtlProbeart;
-import de.bielefeld.umweltamt.aui.mappings.atl.AtlProbepkt;
+import de.bielefeld.umweltamt.aui.mappings.atl.Analyseposition;
+import de.bielefeld.umweltamt.aui.mappings.atl.Einheiten;
+import de.bielefeld.umweltamt.aui.mappings.atl.Klaeranlage;
+import de.bielefeld.umweltamt.aui.mappings.atl.Parameter;
+import de.bielefeld.umweltamt.aui.mappings.atl.Probeart;
+import de.bielefeld.umweltamt.aui.mappings.atl.Messstelle;
 import de.bielefeld.umweltamt.aui.utils.AuikLogger;
 import de.bielefeld.umweltamt.aui.utils.AuikUtils;
+import de.bielefeld.umweltamt.aui.utils.ComponentFactory;
 import de.bielefeld.umweltamt.aui.utils.DateUtils;
 import de.bielefeld.umweltamt.aui.utils.SearchBox;
 import de.bielefeld.umweltamt.aui.utils.SwingWorkerVariant;
@@ -153,7 +153,7 @@ import de.bielefeld.umweltamt.aui.utils.charts.Charts;
 
 /**
  * Ein Modul um Analysedaten der Klärschlämme auszuwerten.
- * 
+ *
  * @author David Klotz
  */
 public class KlaerschlammAuswertung extends AbstractModul
@@ -166,7 +166,7 @@ public class KlaerschlammAuswertung extends AbstractModul
 
 	/**
 	 * Ein Dialog um die Auswertung der Klärschlamm-Parameter zu betrachten.
-	 * 
+	 *
 	 * @author David Klotz
 	 */
 	private class AuswertungsDialog extends JDialog
@@ -175,7 +175,7 @@ public class KlaerschlammAuswertung extends AbstractModul
 
 		/**
 		 * Ein Listener für die Events des Dialogs.
-		 * 
+		 *
 		 * @author David Klotz
 		 */
 		private class DialogListener extends WindowAdapter implements
@@ -205,7 +205,7 @@ public class KlaerschlammAuswertung extends AbstractModul
 
 		/**
 		 * Ein Tablemodel für die
-		 * 
+		 *
 		 * @author David Klotz
 		 */
 		private class ExportTableModel extends AbstractTableModel
@@ -318,7 +318,7 @@ public class KlaerschlammAuswertung extends AbstractModul
 				 * break;
 				 * }
 				 * }
-				 * 
+				 *
 				 * if (probe == null && col2 != null) {
 				 * for (int i = 0; i < col2.getSeriesCount(); i++) {
 				 * item = (APosDataItem) col2.getSeries(i).getDataItem(min);
@@ -449,10 +449,10 @@ public class KlaerschlammAuswertung extends AbstractModul
 			JPanel tmp = new JPanel(new BorderLayout(0, 7));
 
 			tmp.add(initializeContent(), BorderLayout.CENTER);
-			JPanel buttonBar = ButtonBarFactory.buildOKCancelBar(
-																	this.speichernButton, this.abbrechenButton);
+			JComponent buttonBar = ComponentFactory.buildOKCancelBar(
+					this.speichernButton, this.abbrechenButton);
 			tmp.add(buttonBar, BorderLayout.SOUTH);
-			tmp.setBorder(Borders.TABBED_DIALOG_BORDER);
+			tmp.setBorder(Paddings.TABBED_DIALOG);
 
 			this.setContentPane(tmp);
 			this.pack();
@@ -484,7 +484,7 @@ public class KlaerschlammAuswertung extends AbstractModul
 			}
 
 			this.chartPanel = new ChartPanel(chart, false);
-			this.chartPanel.setBorder(Borders.DIALOG_BORDER);
+			this.chartPanel.setBorder(Paddings.DIALOG);
 
 			return this.chartPanel;
 		}
@@ -541,18 +541,17 @@ public class KlaerschlammAuswertung extends AbstractModul
 			JScrollPane tabellenScroller = new JScrollPane(this.exportTable,
 					JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED,
 					JScrollPane.HORIZONTAL_SCROLLBAR_ALWAYS);
-			tabellenScroller.setBorder(Borders.DIALOG_BORDER);
+			tabellenScroller.setBorder(Paddings.DIALOG);
 			/*
 			 * FormLayout layout = new FormLayout(
 			 * "pref:grow",
 			 * "pref:grow"
 			 * );
-			 * 
+			 *
 			 * PanelBuilder builder = new PanelBuilder(layout);
-			 * builder.setDefaultDialogBorder();
-			 * 
+			 *
 			 * CellConstraints cc = new CellConstraints();
-			 * 
+			 *
 			 * builder.add(tabellenScroller, cc.xy( 1, 1));
 			 */
 
@@ -701,14 +700,14 @@ public class KlaerschlammAuswertung extends AbstractModul
 	private JTextField rightAnalyseFeld;
 
 	private ActionListener rlButtonListener;
-	private AtlEinheiten[] einheiten;
+	private Einheiten[] einheiten;
 
 	private TimeSeriesCollection dataSet1;
 	private TimeSeriesCollection dataSet2;
 
 	/*
 	 * (non-Javadoc)
-	 * 
+	 *
 	 * @see de.bielefeld.umweltamt.aui.Modul#getName()
 	 */
 	@Override
@@ -719,7 +718,7 @@ public class KlaerschlammAuswertung extends AbstractModul
 
 	/*
 	 * (non-Javadoc)
-	 * 
+	 *
 	 * @see de.bielefeld.umweltamt.aui.Modul#getIdentifier()
 	 */
 	@Override
@@ -736,7 +735,7 @@ public class KlaerschlammAuswertung extends AbstractModul
 
 	/*
 	 * (non-Javadoc)
-	 * 
+	 *
 	 * @see de.bielefeld.umweltamt.aui.Modul#getCategory()
 	 */
 	@Override
@@ -747,7 +746,7 @@ public class KlaerschlammAuswertung extends AbstractModul
 
 	/*
 	 * (non-Javadoc)
-	 * 
+	 *
 	 * @see de.bielefeld.umweltamt.aui.Modul#getPanel()
 	 */
 	@Override
@@ -755,7 +754,7 @@ public class KlaerschlammAuswertung extends AbstractModul
 	{
 		if (this.panel == null)
 		{
-			this.einheiten = DatabaseQuery.getAtlEinheiten();
+			this.einheiten = DatabaseQuery.getEinheiten();
 
 			String spaltenTeil = "pref, 5dlu, pref:g";
 			String zeileLuecke = "pref, 3dlu";
@@ -774,7 +773,6 @@ public class KlaerschlammAuswertung extends AbstractModul
 			gesamtLayout.setRowGroups(new int[][] { { 3, 5 } });
 
 			PanelBuilder builder = new PanelBuilder(gesamtLayout);
-			builder.setDefaultDialogBorder();
 			CellConstraints cc = new CellConstraints();
 			CellConstraints cc2 = (CellConstraints) cc.clone();
 			builder.addSeparator("Kläranlagen / Art", cc.xyw(1, 1, 5));
@@ -789,10 +787,11 @@ public class KlaerschlammAuswertung extends AbstractModul
 
 			builder.addSeparator("Parameter", cc.xyw(1, 9, 9));
 			builder.add(getParameterPanel(), cc.xyw(1, 11, 9, "fill, fill"));
-			JPanel buttonPanel = ButtonBarFactory.buildOKBar(getSubmitButton());
+			JComponent buttonPanel = ComponentFactory.buildOKBar(getSubmitButton());
 			builder.add(buttonPanel, cc.xyw(1, 13, 9, "fill, fill"));
 
 			this.panel = builder.getPanel();
+			this.panel.setBorder(Paddings.DIALOG);
 		}
 		return this.panel;
 	}
@@ -878,25 +877,25 @@ public class KlaerschlammAuswertung extends AbstractModul
 		TimeSeriesCollection col = new TimeSeriesCollection();
 
 		//        int parameterAnzahl;
-		AtlEinheiten einheit;
+		Einheiten einheit;
 		JList paramList;
 		String analyseVon;
 		if (axis.equals(LEFT))
 		{
 			//            parameterAnzahl = getLeftList().getModel().getSize();
-			einheit = (AtlEinheiten) getLeftEinheitenBox().getSelectedItem();
+			einheit = (Einheiten) getLeftEinheitenBox().getSelectedItem();
 			paramList = getLeftList();
 			analyseVon = getLeftAnalyseFeld().getText().toLowerCase().trim();
 		}
 		else
 		{
 			//            parameterAnzahl = getRightList().getModel().getSize();
-			einheit = (AtlEinheiten) getRightEinheitenBox().getSelectedItem();
+			einheit = (Einheiten) getRightEinheitenBox().getSelectedItem();
 			paramList = getRightList();
 			analyseVon = getRightAnalyseFeld().getText().toLowerCase().trim();
 		}
 
-		AtlProbeart art = (AtlProbeart) getArtBox().getSelectedItem();
+		Probeart art = (Probeart) getArtBox().getSelectedItem();
 
 		Date vonDate = getVonDateChooser().getDate();
 		Date bisDate = getBisDateChooser().getDate();
@@ -905,8 +904,8 @@ public class KlaerschlammAuswertung extends AbstractModul
 		{
 			for (int ndx : this.klaeranlagen.getSelectedIndices())
 			{
-				AtlKlaeranlagen anlage =
-						(AtlKlaeranlagen)
+				Klaeranlage anlage =
+						(Klaeranlage)
 						this.klaeranlagen.getModel().getElementAt(ndx);
 				createSeries(art,
 								anlage,
@@ -922,24 +921,24 @@ public class KlaerschlammAuswertung extends AbstractModul
 		return col;
 	}
 
-	private void createSeries(AtlProbeart art, AtlKlaeranlagen ka,
-		AtlEinheiten einheit, JList paramList, String analyseVon,
+	private void createSeries(Probeart art, Klaeranlage ka,
+		Einheiten einheit, JList paramList, String analyseVon,
 		Date vonDate, Date bisDate, TimeSeriesCollection col)
 	{
 
-		AtlProbepkt pkt = DatabaseQuery.getKlaerschlammProbepunkt(art, ka);
+		Messstelle pkt = DatabaseQuery.getKlaerschlammProbepunkt(art, ka);
 
 		if (pkt != null)
 		{
 			for (int i = 0; i < paramList.getModel().getSize(); i++)
 			{
-				AtlParameter param = (AtlParameter) paramList.getModel()
+				Parameter param = (Parameter) paramList.getModel()
 						.getElementAt(i);
 
 				this.frame.changeStatus("Erzeuge Datenreihe für " + param + ", "
 						+ ka);
 
-				List<AtlAnalyseposition> list =
+				List<Analyseposition> list =
 						DatabaseQuery.getAnalysepositionFromView(
 																	param, einheit, pkt, vonDate, bisDate, analyseVon);
 				TimeSeries series = ChartDataSets
@@ -954,8 +953,7 @@ public class KlaerschlammAuswertung extends AbstractModul
 	{
 		if (this.vonDateChooser == null)
 		{
-			this.vonDateChooser = new JDateChooser(DateUtils.FORMAT_DEFAULT,
-					false);
+			this.vonDateChooser = new JDateChooser(null, DateUtils.FORMAT_DEFAULT);
 		}
 
 		return this.vonDateChooser;
@@ -965,8 +963,7 @@ public class KlaerschlammAuswertung extends AbstractModul
 	{
 		if (this.bisDateChooser == null)
 		{
-			this.bisDateChooser = new JDateChooser(DateUtils.FORMAT_DEFAULT,
-					false);
+			this.bisDateChooser = new JDateChooser(null, DateUtils.FORMAT_DEFAULT);
 		}
 
 		return this.bisDateChooser;
@@ -976,13 +973,13 @@ public class KlaerschlammAuswertung extends AbstractModul
 	{
 		if (this.klaeranlagen == null)
 		{
-			List<AtlKlaeranlagen> all = AtlKlaeranlagen.getAll();
+			List<Klaeranlage> all = Klaeranlage.getAll();
 			DefaultListModel model = new DefaultListModel();
 			this.klaeranlagen = new JList(model);
 			this.klaeranlagen.setPrototypeCellValue("test");
 			this.klaeranlagen.setSelectionMode(
 					ListSelectionModel.MULTIPLE_INTERVAL_SELECTION);
-			for (AtlKlaeranlagen element : all)
+			for (Klaeranlage element : all)
 			{
 				model.addElement(element);
 			}
@@ -995,15 +992,15 @@ public class KlaerschlammAuswertung extends AbstractModul
 		if (this.artBox == null)
 		{
 			Integer[] artIDs = new Integer[] {
-					DatabaseConstants.ATL_PROBEART_ID_ROHRSCHLAMM,
+					DatabaseConstants.ATL_PROBEART_ID_ROHSCHLAMM,
 					DatabaseConstants.ATL_PROBEART_ID_FAULSCHLAMM,
 					DatabaseConstants.ATL_PROBEART_ID_ANLIEFERUNG,
 					DatabaseConstants.ATL_PROBEART_ID_ZULAUF
 			};
-			AtlProbeart[] arten = new AtlProbeart[artIDs.length];
+			Probeart[] arten = new Probeart[artIDs.length];
 			for (int i = 0; i < artIDs.length; i++)
 			{
-				arten[i] = AtlProbeart.findById(artIDs[i]);
+				arten[i] = Probeart.findById(artIDs[i]);
 			}
 			this.artBox = new JComboBox(arten);
 		}
@@ -1097,7 +1094,7 @@ public class KlaerschlammAuswertung extends AbstractModul
 				builder.add(createRLButton(true, paramID), cc.xy(3, y));
 				builder.add(
 							new JLabel(
-									AtlParameter.findById(paramID).getBezeichnung(),
+									Parameter.findById(paramID).getBezeichnung(),
 									JLabel.CENTER),
 							cc.xy(5, y, "f,d"));
 				builder.add(createRLButton(false, paramID), cc.xy(7, y));
@@ -1347,18 +1344,18 @@ public class KlaerschlammAuswertung extends AbstractModul
 																			"");
 					String paramId = e.getActionCommand().replaceFirst(".*_",
 																		"");
-					AtlParameter param = null;
+					Parameter param = null;
 
 					if (!paramId.equals(""))
 					{
 						if (paramId.equals("box"))
 						{
-							param = (AtlParameter) getParameterBox()
+							param = (Parameter) getParameterBox()
 									.getSelectedItem();
 						}
 						else
 						{
-							param = AtlParameter.findById(paramId);
+							param = Parameter.findById(paramId);
 						}
 					}
 

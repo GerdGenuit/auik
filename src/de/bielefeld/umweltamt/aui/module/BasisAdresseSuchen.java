@@ -48,9 +48,10 @@
  */
 package de.bielefeld.umweltamt.aui.module;
 
-import java.awt.Color;
+import java.awt.BorderLayout;
 import java.awt.Component;
 import java.awt.KeyboardFocusManager;
+import java.awt.Label;
 import java.awt.Point;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -64,6 +65,7 @@ import javax.swing.Action;
 import javax.swing.Icon;
 import javax.swing.JButton;
 import javax.swing.JComboBox;
+import javax.swing.JComponent;
 import javax.swing.JMenuItem;
 import javax.swing.JPanel;
 import javax.swing.JPopupMenu;
@@ -81,9 +83,10 @@ import javax.swing.event.ListSelectionListener;
 import javax.swing.table.TableCellRenderer;
 
 import com.jgoodies.forms.builder.PanelBuilder;
+import com.jgoodies.forms.factories.Paddings;
 import com.jgoodies.forms.layout.CellConstraints;
 import com.jgoodies.forms.layout.FormLayout;
-import com.jgoodies.uif_lite.component.Factory;
+import de.bielefeld.umweltamt.aui.utils.ComponentFactory;
 
 import de.bielefeld.umweltamt.aui.AbstractModul;
 import de.bielefeld.umweltamt.aui.GUIManager;
@@ -91,11 +94,10 @@ import de.bielefeld.umweltamt.aui.HauptFrame;
 import de.bielefeld.umweltamt.aui.SettingsManager;
 import de.bielefeld.umweltamt.aui.mappings.DatabaseConstants;
 import de.bielefeld.umweltamt.aui.mappings.DatabaseQuery;
-import de.bielefeld.umweltamt.aui.mappings.basis.BasisAdresse;
-import de.bielefeld.umweltamt.aui.mappings.basis.BasisObjekt;
-import de.bielefeld.umweltamt.aui.mappings.basis.BasisStrassen;
+import de.bielefeld.umweltamt.aui.mappings.basis.Inhaber;
+import de.bielefeld.umweltamt.aui.mappings.basis.Objekt;
 import de.bielefeld.umweltamt.aui.module.common.editors.BetreiberEditor;
-import de.bielefeld.umweltamt.aui.module.common.tablemodels.BasisAdresseModel;
+import de.bielefeld.umweltamt.aui.module.common.tablemodels.BasisInhaberModel;
 import de.bielefeld.umweltamt.aui.module.common.tablemodels.BasisObjektModel;
 import de.bielefeld.umweltamt.aui.utils.AuikLogger;
 import de.bielefeld.umweltamt.aui.utils.AuikUtils;
@@ -117,12 +119,16 @@ public class BasisAdresseSuchen extends AbstractModul {
 
     private JComboBox suchBox;
     private JTextField suchFeld;
-    
+
 	private JTextField strassenFeld;
 	private JTextField hausnrFeld;
 	private JTextField ortFeld;
     private JButton submitButton;
-    private JButton submitButtonStandort;
+	private JButton indirektButton;
+	private JButton awsvButton;
+	private JButton probepktButton;
+	private JButton anfallButton;
+	private JButton genButton;
     private JButton submitButtonBetreiber;
     private JSplitPane tabellenSplit;
     private JTable betreiberTabelle;
@@ -139,24 +145,18 @@ public class BasisAdresseSuchen extends AbstractModul {
     private Action objektLoeschAction;
     private JPopupMenu objektPopup;
 
-    private BasisAdresseModel betreiberModel;
+    private BasisInhaberModel inhaberModel;
     private BasisObjektModel objektModel;
-    public BasisAdresse adresse;
+    public Inhaber inhaber;
 
 	private Timer suchTimer;
-
-    /**
-     * Wird benutzt, um nach dem Bearbeiten etc. wieder den selben Betreiber in
-     * der Liste auszuwählen.
-     */
-    private BasisAdresse lastAdresse;
 
     /*
      * @see de.bielefeld.umweltamt.aui.Modul#getName()
      */
     @Override
     public String getName() {
-        return "Adresse suchen";
+        return "Betreiber/Inhaber suchen";
     }
 
     /*
@@ -191,7 +191,7 @@ public class BasisAdresseSuchen extends AbstractModul {
     @Override
     public JPanel getPanel() {
         if (this.panel == null) {
-            this.betreiberModel = new BasisAdresseModel();
+            this.inhaberModel = new BasisInhaberModel();
             this.objektModel = new BasisObjektModel("Standort", this.manager
                 .getSettingsManager().getSetting("auik.prefs.abteilungsfilter"));
 
@@ -212,40 +212,51 @@ public class BasisAdresseSuchen extends AbstractModul {
             submitToolBar.setRollover(true);
             submitToolBar.add(getSubmitButton());
 
+			JPanel restrictPanel = new JPanel(new BorderLayout());
+
+			JComponent restrictButtonBar = ComponentFactory.buildLeftAlignedBar(
+                getAwsvButton(), getIndirektButton(), getProbepktButton(), getAnfallButton(), getGenButton());
+
+			restrictPanel.add(new Label("Objekte einschränken:"),
+                BorderLayout.WEST);
+			restrictPanel.add(restrictButtonBar, BorderLayout.CENTER);
+
             // Die Tab-Action ist in eine neue Klasse ausgelagert,
             // weil man sie evtl. öfters brauchen wird.
             TabAction ta = new TabAction();
 			ta.addComp(getSuchFeld());
 			ta.addComp(getHausnrFeld());
+			ta.addComp(getOrtFeld());
             ta.addComp(getBetreiberTabelle());
             ta.addComp(getObjektTabelle());
 
-            this.tabellenSplit = Factory.createStrippedSplitPane(
+            this.tabellenSplit = ComponentFactory.createStrippedSplitPane(
                 JSplitPane.VERTICAL_SPLIT, betreiberScroller, objektScroller,
                 0.7);
 
             FormLayout layout = new FormLayout(
-					"l:p, max(4dlu;p), p:g, 3dlu, p, 3dlu, 40dlu, 3dlu, p, 3dlu,  p:g, 3dlu, 70dlu, 3dlu, 70dlu", // spalten
-					"pref, 3dlu, pref, 3dlu, 150dlu:grow"); // zeilen
+                "l:p, max(4dlu;p), p:g, 3dlu, p, 3dlu, 40dlu, 3dlu, p, 3dlu,  p:g, 3dlu, 70dlu, 3dlu, 70dlu", // spalten
+                "pref, 3dlu, pref, 3dlu, 150dlu:grow, 3dlu, 30"); // zeilen
 
             PanelBuilder builder = new PanelBuilder(layout);
-            builder.setDefaultDialogBorder();
             CellConstraints cc = new CellConstraints();
 
             builder.add(getSuchBox(), cc.xy(1, 1));
             builder.add(getSuchFeld(), cc.xy(3, 1));
-            builder.add(getSubmitButton(), cc.xyw(13, 1, 3));
+            builder.add(getSubmitButtonBetreiber(), cc.xyw(13, 1, 3));
 			builder.addLabel("Straße:", cc.xy(1, 3));
 			builder.add(getStrassenFeld(), cc.xy(3, 3));
 			builder.addLabel("Haus-Nr.:", cc.xy(5, 3));
 			builder.add(getHausnrFeld(), cc.xy(7, 3));
 			builder.addLabel("Ort:", cc.xy(9, 3));
 			builder.add(getOrtFeld(), cc.xy(11, 3));
-            builder.add(getSubmitButtonBetreiber(), cc.xy(13, 3));
-            builder.add(getSubmitButtonStandort(), cc.xy(15, 3));
+            builder.add(getSubmitButton(), cc.xyw(13, 3, 3));
+//            builder.add(getSubmitButtonStandort(), cc.xy(15, 3));
             builder.add(this.tabellenSplit, cc.xyw(1, 5, 15));
+			builder.add(restrictPanel, cc.xyw(1, 7, 15));
 
             this.panel = builder.getPanel();
+            this.panel.setBorder(Paddings.DIALOG);
         }
         return this.panel;
     }
@@ -259,15 +270,13 @@ public class BasisAdresseSuchen extends AbstractModul {
 
         // Gespeicherte Position des Dividers setzen
         if (SettingsManager.getInstance().getSetting(
-            "auik.prefs.divloc_betreiber") != null) {
+                "auik.prefs.divloc_betreiber") != null) {
             double divloc = Double.parseDouble(SettingsManager.getInstance()
                 .getSetting("auik.prefs.divloc_betreiber"));
             this.tabellenSplit.setDividerLocation(divloc);
         }
-        
-        this.lastAdresse = null;
+
         filterBetreiberListe(suchFeld);
-        
     }
 
     /* (non-Javadoc)
@@ -290,180 +299,97 @@ public class BasisAdresseSuchen extends AbstractModul {
         }
     }
 
-    private void doSearch() {
-        final String name = getSuchFeld().getText();
-        final String strasse = getStrassenFeld().getText();
+	private void doSearch() {
+		final String name = getSuchFeld().getText();
+		final String strasse = getStrassenFeld().getText();
 		int hausnr;
-		try
-		{
+		try {
 			hausnr = Integer.parseInt(getHausnrFeld().getText());
-		}
-		catch (NumberFormatException e1)
-		{
+        } catch (NumberFormatException e1) {
 			hausnr = -1;
-		}
+        }
 		final int fhausnr = hausnr;
-        final String ort = getOrtFeld().getText();
-        final String property = (String) ((NamedObject) getSuchBox().getSelectedItem()).getValue();;
+		final String ort = getOrtFeld().getText();
+		final String property = (String) ((NamedObject) getSuchBox().getSelectedItem()).getValue();
 
-
-            SwingWorkerVariant worker = new SwingWorkerVariant(
-                getBetreiberTabelle()) {
-                @Override
-                
+        SwingWorkerVariant worker = new SwingWorkerVariant(
+            getBetreiberTabelle()) {
+            @Override
 			protected void doNonUILogic() throws RuntimeException {
 //				if (name != "" || strasse != ""
 //						|| fhausnr != -1 || ort != "") {
-					BasisAdresseSuchen.this.betreiberModel.filterAllList(name,
-							strasse, fhausnr, ort, property);
-				}
+				BasisAdresseSuchen.this.inhaberModel.filterAllList(name, strasse, fhausnr, ort, property);
+            }
 //			}
 
-                @Override
-                protected void doUIUpdateLogic() throws RuntimeException {
-    				getBetreiberTabelle().clearSelection();
-    				
-    				BasisAdresseSuchen.this.betreiberModel.fireTableDataChanged();
-    				String statusMsg = "Suche: "
-    						+ BasisAdresseSuchen.this.betreiberModel.getRowCount()
-    						+ " Ergebnis";
-    				if (BasisAdresseSuchen.this.betreiberModel.getRowCount() != 1)
-    				{
-    					statusMsg += "se";
-    				}
-    				statusMsg += ".";
-    				BasisAdresseSuchen.this.frame.changeStatus(statusMsg);
-                	BasisAdresseSuchen.this.betreiberModel.fireTableDataChanged();
+			@Override
+			protected void doUIUpdateLogic() throws RuntimeException {
+				getBetreiberTabelle().clearSelection();
+
+				BasisAdresseSuchen.this.inhaberModel.fireTableDataChanged();
+				String statusMsg = "Suche: " + BasisAdresseSuchen.this.inhaberModel.getRowCount() + " Ergebnis";
+				if (BasisAdresseSuchen.this.inhaberModel.getRowCount() != 1) {
+					statusMsg += "se";
                 }
-            };
-            worker.start();
+				statusMsg += ".";
+				BasisAdresseSuchen.this.frame.changeStatus(statusMsg);
+				BasisAdresseSuchen.this.inhaberModel.fireTableDataChanged();
+            }
+        };
+		worker.start();
+    }
 
-			
-    } 
-    
-
-
-
-    /**
+	/**
 	 * Filtert die Adressen-Liste nach Betreibern.
-	 * 
-	 * @param focusComp
-	 *            Welche Komponente soll nach der Suche den Fokus bekommen.
+	 *
+	 * @param focusComp Welche Komponente soll nach der Suche den Fokus bekommen.
 	 */
-	public void filterBetreiberListe(Component focusComp)
-	{
-	    log.debug("Start filterStandortListe()");
+	public void filterBetreiberListe(Component focusComp) {
+		log.debug("Start filterStandortListe()");
 		int hausnr;
-		try
-		{
+		try {
 			hausnr = Integer.parseInt(getHausnrFeld().getText());
-		}
-		catch (NumberFormatException e1)
-		{
+        } catch (NumberFormatException e1) {
 			hausnr = -1;
-		}
+        }
 		final int fhausnr = hausnr;
-	
-		SwingWorkerVariant worker = new SwingWorkerVariant(focusComp)
-		{
-	
-			@Override
-			protected void doNonUILogic()
-			{
-				if (SettingsManager.getInstance().getStandort() != null)
-				{					
-					BasisAdresseSuchen.this.betreiberModel.filterBetreiber(
-																		getSuchFeld().getText(),
-																		getStrassenFeld().getText(),
-																		fhausnr,
-																		getOrtFeld()
-																				.getText());
-				}
-//				getSuchFeld().setText("");
-			}
-	
-			@Override
-			protected void doUIUpdateLogic()
-			{
-				getBetreiberTabelle().clearSelection();
-	
-				BasisAdresseSuchen.this.betreiberModel.fireTableDataChanged();
-				String statusMsg = "Suche: "
-						+ BasisAdresseSuchen.this.betreiberModel.getRowCount()
-						+ " Ergebnis";
-				if (BasisAdresseSuchen.this.betreiberModel.getRowCount() != 1)
-				{
-					statusMsg += "se";
-				}
-				statusMsg += ".";
-				BasisAdresseSuchen.this.frame.changeStatus(statusMsg);
-			}
-		};
-	
-		this.frame.changeStatus("Suche...");
-		worker.start();
-	    log.debug("End filterStandortListe()");
-	}
+		String name = getSuchFeld().getText();
+		String str = getStrassenFeld().getText();
+		final String ort = getOrtFeld().getText();
 
-    /**
-	 * Filtert die Adressen-Liste nach Standorten.
-	 * 
-	 * @param focusComp
-	 *            Welche Komponente soll nach der Suche den Fokus bekommen.
-	 */
-	public void filterStandortListe(Component focusComp)
-	{
-	    log.debug("Start filterStandortListe()");
-		int hausnr;
-		try
-		{
-			hausnr = Integer.parseInt(getHausnrFeld().getText());
-		}
-		catch (NumberFormatException e1)
-		{
-			hausnr = -1;
-		}
-		final int fhausnr = hausnr;
-	
-		SwingWorkerVariant worker = new SwingWorkerVariant(focusComp)
-		{
-	
+		SwingWorkerVariant worker = new SwingWorkerVariant(focusComp) {
+
 			@Override
-			protected void doNonUILogic()
-			{
-				if (SettingsManager.getInstance().getStandort() != null)
-				{
-					BasisAdresseSuchen.this.betreiberModel.filterStandort(
-																		getSuchFeld().getText(),
-																		getStrassenFeld().getText(),
-																		fhausnr,
-																		getOrtFeld()
-																				.getText());
-				}
-			}
-	
+			protected void doNonUILogic() {
+
+				if(!name.isEmpty() || !str.isEmpty() || !ort.isEmpty()) {
+					BasisAdresseSuchen.this.inhaberModel.filterBetreiber(getSuchFeld().getText(),
+                        getStrassenFeld().getText(), fhausnr, ort);
+                }
+//				getSuchFeld().setText("");
+//				getStrassenFeld().setText("");
+//				getHausnrFeld().setText("");
+//				getOrtFeld().setText("");
+            }
+
 			@Override
-			protected void doUIUpdateLogic()
-			{
+			protected void doUIUpdateLogic() {
 				getBetreiberTabelle().clearSelection();
-	
-				BasisAdresseSuchen.this.betreiberModel.fireTableDataChanged();
-				String statusMsg = "Suche: "
-						+ BasisAdresseSuchen.this.betreiberModel.getRowCount()
-						+ " Ergebnis";
-				if (BasisAdresseSuchen.this.betreiberModel.getRowCount() != 1)
-				{
+
+				BasisAdresseSuchen.this.inhaberModel.fireTableDataChanged();
+				String statusMsg = "Suche: " + BasisAdresseSuchen.this.inhaberModel.getRowCount() + " Ergebnis";
+				if (BasisAdresseSuchen.this.inhaberModel.getRowCount() != 1) {
 					statusMsg += "se";
-				}
+                }
 				statusMsg += ".";
 				BasisAdresseSuchen.this.frame.changeStatus(statusMsg);
-			}
-		};
-	
+            }
+        };
+
 		this.frame.changeStatus("Suche...");
 		worker.start();
-	    log.debug("End filterStandortListe()");
-	}
+		log.debug("End filterStandortListe()");
+    }
 
 
 	public void updateObjekte() {
@@ -471,13 +397,13 @@ public class BasisAdresseSuchen extends AbstractModul {
         ListSelectionModel lsm = getBetreiberTabelle().getSelectionModel();
         if (!lsm.isSelectionEmpty()) {
             int selectedRow = lsm.getMinSelectionIndex();
-            BasisAdresse betr = this.betreiberModel.getRow(selectedRow);
-            log.debug("Betreiber " + betr.getBetrname() + " (ID"
+    		Inhaber betr = (Inhaber) this.inhaberModel.getRow(selectedRow);
+            log.debug("Betreiber (ID"
                 + betr.getId() + ") angewählt.");
+            this.inhaber = betr;
             searchObjekteByBetreiber(betr);
-            this.adresse = betr;
         }
-        
+
         log.debug("End updateObjekte()");
     }
 
@@ -485,32 +411,88 @@ public class BasisAdresseSuchen extends AbstractModul {
      * öffnet einen Dialog um einen Betreiber-Datensatz zu bearbeiten.
      * @param betr Der Betreiber
      */
-    public void editBetreiber(BasisAdresse betr) {
+    public void editBetreiber(Inhaber betr) {
         BetreiberEditor editDialog = new BetreiberEditor(betr, this.frame);
         editDialog.setLocationRelativeTo(this.frame);
 
         editDialog.setVisible(true);
 
-        this.lastAdresse = betr;
-
         // Nach dem Bearbeiten die Liste updaten, damit unsere Änderungen auch
         // angezeigt werden.
-//        updateBetreiberListe();
+        updateBetreiberListe();
     }
 
-    /**
+    private void updateBetreiberListe() {
+		filterBetreiberListe(betreiberTabelle);
+
+    }
+
+	/**
      * Setzt den Tabelleninhalt der Objekt-Tabelle auf alle Objekte eines
      * Betreibers.
      * @param betreiberid Die Betreiber-Id
      */
-    public void searchObjekteByBetreiber(final BasisAdresse betreiber) {
+    public void searchObjekteByBetreiber(final Inhaber inh) {
         // ... siehe show()
         SwingWorkerVariant worker = new SwingWorkerVariant(
             getBetreiberTabelle()) {
             @Override
             protected void doNonUILogic() throws RuntimeException {
                 BasisAdresseSuchen.this.objektModel
-                    .searchByStandort(betreiber);
+                    .searchByInhaber(inh);
+            }
+
+            @Override
+            protected void doUIUpdateLogic() throws RuntimeException {
+
+                BasisAdresseSuchen.this.objektModel.fireTableDataChanged();
+            }
+
+        };
+        worker.start();
+    }
+
+	/**
+     * Setzt den Tabelleninhalt der Objekt-Tabelle auf alle Objekte eines
+     * Betreibers.
+     * @param betreiberid Die Betreiber-Id
+     */
+    public void searchObjekteByBetreiber(final Inhaber inh,
+        final Integer istartid) {
+        // ... siehe show()
+        SwingWorkerVariant worker = new SwingWorkerVariant(
+            getBetreiberTabelle()) {
+            @Override
+            protected void doNonUILogic()
+                {
+                BasisAdresseSuchen.this.objektModel.searchByInhaber(inh,
+                    istartid);
+                }
+
+            @Override
+            protected void doUIUpdateLogic()
+                {
+                BasisAdresseSuchen.this.objektModel.fireTableDataChanged();
+                }
+        };
+        worker.start();
+    }
+
+	/**
+     * Setzt den Tabelleninhalt der Objekt-Tabelle auf alle Objekte eines
+     * Betreibers.
+     * @param betreiberid Die Betreiber-Id
+     */
+    public void searchObjekteByBetreiber(final Inhaber inh,
+        final String abteilung) {
+        // ... siehe show()
+        SwingWorkerVariant worker = new SwingWorkerVariant(
+            getBetreiberTabelle()) {
+            @Override
+            protected void doNonUILogic() throws RuntimeException {
+                BasisAdresseSuchen.this.objektModel
+                    .searchByInhaber(inh,
+                        abteilung);
             }
 
             @Override
@@ -533,14 +515,14 @@ public class BasisAdresseSuchen extends AbstractModul {
                     // Natürlich nur editieren, wenn wirklich eine Zeile
                     // ausgewählt ist
                     if (row != -1) {
-                        BasisAdresse betr = BasisAdresseSuchen.this.betreiberModel
+                    	Inhaber betr = (Inhaber) BasisAdresseSuchen.this.inhaberModel
                             .getRow(row);
                         editBetreiber(betr);
                     }
                 }
             };
             this.betreiberEditAction.putValue(Action.MNEMONIC_KEY, new Integer(
-                KeyEvent.VK_B));
+                    KeyEvent.VK_B));
             this.betreiberEditAction.putValue(Action.ACCELERATOR_KEY,
                 KeyStroke.getKeyStroke(KeyEvent.VK_ENTER, 0, false));
         }
@@ -564,14 +546,14 @@ public class BasisAdresseSuchen extends AbstractModul {
                                     "Kann Betreiber nicht löschen: Zu erst alle zugehörigen Objekte löschen!",
                                     HauptFrame.ERROR_COLOR);
                         } else {
-                            BasisAdresse betr = BasisAdresseSuchen.this.betreiberModel
+                        	Inhaber betr = (Inhaber) BasisAdresseSuchen.this.inhaberModel
                                 .getRow(row);
 
                             if (GUIManager.getInstance().showQuestion(
-                                "Soll der Betreiber '" + betr
+                                    "Soll der Betreiber '" + betr
                                     + "' wirklich gelöscht werden?",
-                                "Löschen bestätigen")) {
-                                if (BasisAdresseSuchen.this.betreiberModel
+                                    "Löschen bestätigen")) {
+                                if (BasisAdresseSuchen.this.inhaberModel
                                     .removeRow(row)) {
                                     BasisAdresseSuchen.this.frame
                                         .changeStatus("Betreiber gelöscht.",
@@ -610,21 +592,23 @@ public class BasisAdresseSuchen extends AbstractModul {
                         .getSelectedRow();
 
                     if (row != -1) {
-                        BasisAdresse betr = BasisAdresseSuchen.this.betreiberModel
+                    	Inhaber betr = (Inhaber) BasisAdresseSuchen.this.inhaberModel
                             .getRow(row);
+                        if(betr.getStandorts().size() > 0) {
+                            BasisAdresseSuchen.this.manager.getSettingsManager()
+                                .setSetting("auik.imc.use_standort",
+                                    betr.getStandort().getId().intValue(), false);
+                        }
                         BasisAdresseSuchen.this.manager.getSettingsManager()
-                            .setSetting("auik.imc.use_standort",
+                            .setSetting("auik.imc.use_betreiber",
                                 betr.getId().intValue(), false);
-                        BasisAdresseSuchen.this.manager.getSettingsManager()
-                        .setSetting("auik.imc.use_betreiber",
-                            betr.getId().intValue(), false);
                         BasisAdresseSuchen.this.manager
                             .switchModul("m_objekt_bearbeiten");
                     }
                 }
             };
             this.objektNeuAction.putValue(Action.MNEMONIC_KEY, new Integer(
-                KeyEvent.VK_O));
+                    KeyEvent.VK_O));
         }
 
         return this.objektNeuAction;
@@ -639,29 +623,29 @@ public class BasisAdresseSuchen extends AbstractModul {
                 public void actionPerformed(ActionEvent e) {
                     int row = BasisAdresseSuchen.this.objektTabelle
                         .getSelectedRow();
-                    BasisObjekt obj = BasisAdresseSuchen.this.objektModel
+                    Objekt obj = BasisAdresseSuchen.this.objektModel
                         .getRow(row);
                     if (row != -1
-                        || (!(obj.getBasisObjektarten().getId().equals(
-                            DatabaseConstants.BASIS_OBJEKTART_ID_SIELHAUTMESSSTELLE)))) {
+                        || (!(obj.getObjektarten().getId().equals(
+                                    DatabaseConstants.BASIS_OBJEKTART_ID_SIELHAUTMESSSTELLE)))) {
                         BasisAdresseSuchen.this.manager.getSettingsManager()
                             .setSetting("auik.imc.edit_object",
-                                obj.getObjektid().intValue(), false);
+                                obj.getId().intValue(), false);
                         BasisAdresseSuchen.this.manager
                             .switchModul("m_objekt_bearbeiten");
                     } else if (row != -1
-                        || obj.getBasisObjektarten().getId().equals(
+                        || obj.getObjektarten().getId().equals(
                             DatabaseConstants.BASIS_OBJEKTART_ID_SIELHAUTMESSSTELLE)) {
                         BasisAdresseSuchen.this.manager.getSettingsManager()
                             .setSetting("auik.imc.edit_object",
-                                obj.getObjektid().intValue(), false);
+                                obj.getId().intValue(), false);
                         BasisAdresseSuchen.this.manager
                             .switchModul("m_sielhaut1");
                     }
                 }
             };
             this.objektEditAction.putValue(Action.MNEMONIC_KEY, new Integer(
-                KeyEvent.VK_B));
+                    KeyEvent.VK_B));
             this.objektEditAction.putValue(Action.ACCELERATOR_KEY,
                 KeyStroke.getKeyStroke(KeyEvent.VK_ENTER, 0, false));
         }
@@ -680,14 +664,14 @@ public class BasisAdresseSuchen extends AbstractModul {
                     int row = getObjektTabelle().getSelectedRow();
 
                     if (row != -1) {
-                        BasisObjekt obj = BasisAdresseSuchen.this.objektModel
+                        Objekt obj = BasisAdresseSuchen.this.objektModel
                             .getRow(row);
-                        editBetreiber(obj.getBasisAdresse());
+                        editBetreiber(obj.getBetreiberid());
                     }
                 }
             };
             this.objektBetreiberEditAction.putValue(Action.MNEMONIC_KEY, new Integer(
-                KeyEvent.VK_F1));
+                    KeyEvent.VK_F1));
             this.objektBetreiberEditAction.putValue(Action.ACCELERATOR_KEY,
                 KeyStroke.getKeyStroke(KeyEvent.VK_F1, 0, false));
         }
@@ -708,14 +692,14 @@ public class BasisAdresseSuchen extends AbstractModul {
                     // Natürlich nur editieren, wenn wirklich eine Zeile
                     // ausgewählt ist
                     if (row != -1) {
-                        BasisObjekt obj = BasisAdresseSuchen.this.objektModel
+                        Objekt obj = BasisAdresseSuchen.this.objektModel
                             .getRow(row);
-                        editBetreiber(obj.getBasisStandort());
+                        editBetreiber(obj.getBetreiberid());
                     }
                 }
             };
             this.objektStandortEditAction.putValue(Action.MNEMONIC_KEY, new Integer(
-                KeyEvent.VK_F2));
+                    KeyEvent.VK_F2));
             this.objektStandortEditAction.putValue(Action.ACCELERATOR_KEY,
                 KeyStroke.getKeyStroke(KeyEvent.VK_F2, 0, false));
         }
@@ -732,23 +716,23 @@ public class BasisAdresseSuchen extends AbstractModul {
                 public void actionPerformed(ActionEvent e) {
                     int row = getObjektTabelle().getSelectedRow();
                     if (row != -1 && getObjektTabelle().getEditingRow() == -1) {
-                        BasisObjekt objekt = BasisAdresseSuchen.this.objektModel
+                        Objekt objekt = BasisAdresseSuchen.this.objektModel
                             .getRow(row);
 
                         if (GUIManager.getInstance().showQuestion(
-                            "Soll das Objekt " + objekt.getObjektid()
+                                "Soll das Objekt " + objekt.getId()
                                 + " und alle seine Fachdaten wirklich "
                                 + "gelöscht werden?\n"
                                 + "Hinweis: Manche Objekte können auch erst"
                                 + " gelöscht werden, wenn für sie\n"
                                 + "keine Fachdaten mehr existieren.",
-                            "Löschen bestätigen")) {
+                                "Löschen bestätigen")) {
                             if (BasisAdresseSuchen.this.objektModel
                                 .removeRow(row)) {
                                 BasisAdresseSuchen.this.frame.changeStatus(
                                     "Objekt gelöscht.",
                                     HauptFrame.SUCCESS_COLOR);
-                                log.debug("Objekt " + objekt.getObjektid()
+                                log.debug("Objekt " + objekt.getId()
                                     + " wurde gelöscht!");
                             } else {
                                 BasisAdresseSuchen.this.frame.changeStatus(
@@ -760,7 +744,7 @@ public class BasisAdresseSuchen extends AbstractModul {
                 }
             };
             this.objektLoeschAction.putValue(Action.MNEMONIC_KEY, new Integer(
-                KeyEvent.VK_L));
+                    KeyEvent.VK_L));
             this.objektLoeschAction.putValue(Action.ACCELERATOR_KEY,
                 KeyStroke.getKeyStroke(KeyEvent.VK_DELETE, 0, false));
         }
@@ -816,7 +800,7 @@ public class BasisAdresseSuchen extends AbstractModul {
 
     private JTable getBetreiberTabelle() {
         if (this.betreiberTabelle == null) {
-            this.betreiberTabelle = new JTable(this.betreiberModel);
+            this.betreiberTabelle = new JTable(this.inhaberModel);
 
             // Wir wollen wissen, wenn eine andere Zeile ausgewählt wurde
             ListSelectionModel rowSM = this.betreiberTabelle
@@ -834,28 +818,27 @@ public class BasisAdresseSuchen extends AbstractModul {
             });
 
             this.betreiberTabelle.getColumnModel().getColumn(0)
-                .setPreferredWidth(200);
+                .setPreferredWidth(-10);
             this.betreiberTabelle.getColumnModel().getColumn(1)
-                .setPreferredWidth(60);
+                .setPreferredWidth(200);
             this.betreiberTabelle.getColumnModel().getColumn(2)
-                .setPreferredWidth(70);
+                .setPreferredWidth(200);
             this.betreiberTabelle.getColumnModel().getColumn(3)
-            	.setPreferredWidth(70);
+            	.setPreferredWidth(200);
             this.betreiberTabelle.getColumnModel().getColumn(4)
-            	.setPreferredWidth(70);
+            	.setPreferredWidth(200);
             this.betreiberTabelle.getColumnModel().getColumn(5)
-        		.setPreferredWidth(70);
-            this.betreiberTabelle.getColumnModel().getColumn(6)
-            	.setPreferredWidth(30);
+        		.setPreferredWidth(20);
+
 
             this.betreiberTabelle
                 .setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
             this.betreiberTabelle.setColumnSelectionAllowed(false);
             this.betreiberTabelle.setRowSelectionAllowed(true);
+//            this.betreiberTabelle.setAutoCreateRowSorter(true);
 
             this.betreiberTabelle
                 .addMouseListener(new java.awt.event.MouseAdapter() {
-                    private Object submitButton;
 
 					@Override
                     public void mouseClicked(java.awt.event.MouseEvent e) {
@@ -863,7 +846,7 @@ public class BasisAdresseSuchen extends AbstractModul {
                             Point origin = e.getPoint();
                             int row = getBetreiberTabelle().rowAtPoint(origin);
 
-                            BasisAdresse betr = BasisAdresseSuchen.this.betreiberModel
+                            Inhaber betr = (Inhaber) BasisAdresseSuchen.this.inhaberModel
                                 .getRow(row);
                             log.debug("Doppelklick auf Zeile " + row);
                             editBetreiber(betr);
@@ -909,33 +892,18 @@ public class BasisAdresseSuchen extends AbstractModul {
     }
 
     private JTable getObjektTabelle() {
-    	BasisAdresse adr = this.adresse;
+
         if (this.objektTabelle == null) {
-        	
+
             this.objektTabelle = new JTable(this.objektModel){
 
 				public Component prepareRenderer(TableCellRenderer renderer,
-						int row, int column) {
+                    int row, int column) {
 					Component c = super.prepareRenderer(renderer, row, column);
-					BasisObjekt obj = BasisAdresseSuchen.this.objektModel
-							.getRow(row);
-					if (!isRowSelected(row)) {
-
-						if (obj.getBasisAdresse() == obj.getBasisStandort()) {
-							c.setBackground(new Color(153, 255, 153));
-						}						
-						
-						else if (obj.getBasisAdresse() != obj.getBasisStandort()) {
-							c.setBackground(new Color(255, 255, 153));
-						}
-						else {
-							c.setBackground(Color.WHITE);
-						}
-					}
 					return c;
-				}
-			};
-              
+                }
+            };
+
 			this.objektTabelle
                 .setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
             this.objektTabelle.getColumnModel().getColumn(0).setMaxWidth(60);
@@ -944,8 +912,8 @@ public class BasisAdresseSuchen extends AbstractModul {
                 .getColumn(0)
                 .setPreferredWidth(
                     this.objektTabelle.getColumnModel().getColumn(0)
-                        .getMaxWidth() - 10);
-            
+                    .getMaxWidth() - 10);
+
             this.objektTabelle
                 .addMouseListener(new java.awt.event.MouseAdapter() {
                     @Override
@@ -953,27 +921,27 @@ public class BasisAdresseSuchen extends AbstractModul {
                         if ((e.getClickCount() == 2) && (e.getButton() == 1)) {
                             Point origin = e.getPoint();
                             int row = getObjektTabelle().rowAtPoint(origin);
-                            BasisObjekt obj =
+                            Objekt obj =
                                 BasisAdresseSuchen.this.objektModel.getRow(row);
                             if (row != -1
-                                && (!(obj.getBasisObjektarten().getId().equals(
-                                    DatabaseConstants.BASIS_OBJEKTART_ID_SIELHAUTMESSSTELLE)))) {
+                                && (!(obj.getObjektarten().getId().equals(
+                                            DatabaseConstants.BASIS_OBJEKTART_ID_SIELHAUTMESSSTELLE)))) {
                                 BasisAdresseSuchen.this.manager
                                     .getSettingsManager().setSetting(
                                         "auik.imc.edit_object",
-                                        obj.getObjektid().intValue(), false);
+                                        obj.getId().intValue(), false);
                                 BasisAdresseSuchen.this.manager
                                     .switchModul("m_objekt_bearbeiten");
                             } else if (row != -1
-                                && obj.getBasisObjektarten().getId().equals(
+                                && obj.getObjektarten().getId().equals(
                                     DatabaseConstants.BASIS_OBJEKTART_ID_SIELHAUTMESSSTELLE)) {
                                 BasisAdresseSuchen.this.manager
                                     .getSettingsManager().setSetting(
                                         "auik.imc.edit_object",
-                                        obj.getObjektid().intValue(), false);
+                                        obj.getId().intValue(), false);
                                 BasisAdresseSuchen.this.manager
                                     .switchModul("m_sielhaut1");
-                            }                            	
+                            }
                         }
                     }
 
@@ -989,44 +957,43 @@ public class BasisAdresseSuchen extends AbstractModul {
                 });
 
 			this.objektTabelle.getInputMap().put(
-					(KeyStroke) getObjektEditAction().getValue(
-							Action.ACCELERATOR_KEY),
-					getObjektEditAction().getValue(Action.NAME));
+                (KeyStroke) getObjektEditAction().getValue(
+                    Action.ACCELERATOR_KEY),
+                getObjektEditAction().getValue(Action.NAME));
 			this.objektTabelle.getActionMap().put(
-					getObjektEditAction().getValue(Action.NAME),
-					getObjektEditAction());
+                getObjektEditAction().getValue(Action.NAME),
+                getObjektEditAction());
 
 			this.objektTabelle.getInputMap().put(
-					(KeyStroke) getObjektBetreiberEditAction().getValue(
-							Action.ACCELERATOR_KEY),
-					getObjektBetreiberEditAction().getValue(Action.NAME));
+                (KeyStroke) getObjektBetreiberEditAction().getValue(
+                    Action.ACCELERATOR_KEY),
+                getObjektBetreiberEditAction().getValue(Action.NAME));
 			this.objektTabelle.getActionMap().put(
-					getObjektBetreiberEditAction().getValue(Action.NAME),
-					getObjektBetreiberEditAction());
+                getObjektBetreiberEditAction().getValue(Action.NAME),
+                getObjektBetreiberEditAction());
 
 			this.objektTabelle.getInputMap().put(
-					(KeyStroke) getObjektStandortEditAction().getValue(
-							Action.ACCELERATOR_KEY),
-					getObjektStandortEditAction().getValue(Action.NAME));
+                (KeyStroke) getObjektStandortEditAction().getValue(
+                    Action.ACCELERATOR_KEY),
+                getObjektStandortEditAction().getValue(Action.NAME));
 			this.objektTabelle.getActionMap().put(
-					getObjektStandortEditAction().getValue(Action.NAME),
-					getObjektStandortEditAction());
+                getObjektStandortEditAction().getValue(Action.NAME),
+                getObjektStandortEditAction());
 
 			this.objektTabelle.getInputMap().put(
-					(KeyStroke) getObjektLoeschAction().getValue(
-							Action.ACCELERATOR_KEY),
-					getObjektLoeschAction().getValue(Action.NAME));
+                (KeyStroke) getObjektLoeschAction().getValue(
+                    Action.ACCELERATOR_KEY),
+                getObjektLoeschAction().getValue(Action.NAME));
 			this.objektTabelle.getActionMap().put(
-					getObjektLoeschAction().getValue(Action.NAME),
-					getObjektLoeschAction());
+                getObjektLoeschAction().getValue(Action.NAME),
+                getObjektLoeschAction());
         }
         return this.objektTabelle;
     }
 
     private JButton getSubmitButton() {
         if (this.submitButton == null) {
-            this.submitButton = new JButton("Alle Adressen", AuikUtils.getIcon(16,
-                "key_enter.png"));
+            this.submitButton = new JButton("Alle Adressen");
             this.submitButton.setToolTipText("Suche starten");
             this.submitButton.addActionListener(new ActionListener() {
                 @Override
@@ -1042,7 +1009,8 @@ public class BasisAdresseSuchen extends AbstractModul {
 
     private JButton getSubmitButtonBetreiber() {
         if (this.submitButtonBetreiber == null) {
-            this.submitButtonBetreiber = new JButton("nur Betreiber");
+            this.submitButtonBetreiber = new JButton("Betreiber", AuikUtils.getIcon(16,
+                    "key_enter.png"));
             this.submitButtonBetreiber.setToolTipText("Suche starten");
             this.submitButtonBetreiber.addActionListener(new ActionListener() {
                 @Override
@@ -1056,242 +1024,358 @@ public class BasisAdresseSuchen extends AbstractModul {
         return this.submitButtonBetreiber;
     }
 
-    private JButton getSubmitButtonStandort() {
-        if (this.submitButtonStandort == null) {
-            this.submitButtonStandort = new JButton("nur Standorte");
-            this.submitButtonStandort.setToolTipText("Suche starten");
-            this.submitButtonStandort.addActionListener(new ActionListener() {
-                @Override
-                public void actionPerformed(ActionEvent e) {
-					getSuchTimer().stop();
-					filterStandortListe(getBetreiberTabelle());
-                }
-            });
-        }
-
-        return this.submitButtonStandort;
-    }
-
 	private JTextField getSuchFeld() {
 	    if (this.suchFeld == null) {
 	        this.suchFeld = new JTextField();
 	        this.suchFeld.requestFocusInWindow();
 			this.suchFeld.setFocusTraversalKeys(
-					KeyboardFocusManager.FORWARD_TRAVERSAL_KEYS,
-					Collections.EMPTY_SET);
-	
+                KeyboardFocusManager.FORWARD_TRAVERSAL_KEYS,
+                Collections.EMPTY_SET);
+
 	        this.suchFeld.addActionListener(new ActionListener() {
 	            @Override
 	            public void actionPerformed(ActionEvent e) {
-	                String suche = getSuchFeld().getText();
-	                String spalte = (String) ((NamedObject) getSuchBox()
-	                    .getSelectedItem()).getValue();
-	                doSearch();
-	            }
-	        });
-//	        this.suchFeld.setFocusTraversalKeys(
-//	            KeyboardFocusManager.FORWARD_TRAVERSAL_KEYS,
-//	            Collections.EMPTY_SET);
-//	
-//	        this.suchFeld.addKeyListener(new KeyAdapter() {
-//	            @Override
-//	            public void keyPressed(KeyEvent e) {
-//	                if (e.getKeyCode() == KeyEvent.VK_TAB) {
-//	                    String suche = getSuchFeld().getText();
-//	                    String spalte = (String) ((NamedObject) getSuchBox()
-//	                        .getSelectedItem()).getValue();
-//	                    doSearch();
-//	                }
-//	            }
-//	        });
-	    }
+	                filterBetreiberListe(getBetreiberTabelle());
+                }
+            });
+
+        }
 	    return this.suchFeld;
-	}
+    }
 
 	private JTextField getStrassenFeld()
-	{
+        {
 		if (this.strassenFeld == null)
-		{
+            {
 			this.strassenFeld = new JTextField("");
 			this.strassenFeld.setFocusTraversalKeys(
-													KeyboardFocusManager.FORWARD_TRAVERSAL_KEYS,
-													Collections.EMPTY_SET);
-	
+                KeyboardFocusManager.FORWARD_TRAVERSAL_KEYS,
+                Collections.EMPTY_SET);
+
 			this.strassenFeld.addActionListener(new ActionListener()
-			{
+                {
 				@Override
 				public void actionPerformed(ActionEvent e)
-				{
+                    {
 					getSuchTimer().stop();
-					doSearch();
-				}
-			});
-	
+					filterBetreiberListe(getBetreiberTabelle());
+                    }
+            });
+
 			this.strassenFeld.addKeyListener(new KeyAdapter()
-			{
+                {
 				@Override
 				public void keyPressed(KeyEvent e)
-				{
+                    {
 					if (e.getKeyCode() == KeyEvent.VK_TAB)
-					{
+                        {
 						getSuchTimer().stop();
-						doSearch();
-					}
-				}
-	
+						filterBetreiberListe(getBetreiberTabelle());
+                        }
+                    }
+
 				@Override
 				public void keyTyped(KeyEvent e)
-				{
+                    {
 					if (Character.isLetterOrDigit(e.getKeyChar()))
-					{
+                        {
 						if (getSuchTimer().isRunning())
-						{
+                            {
 							getSuchTimer().restart();
-						}
+                            }
 						else
-						{
+                            {
 							getSuchTimer().start();
-						}
-					}
-				}
-			});
-		}
+                            }
+                        }
+                    }
+            });
+            }
 		return this.strassenFeld;
-	}
+        }
 
 	private JTextField getOrtFeld()
-	{
+        {
 		if (this.ortFeld == null)
-		{
+            {
 			this.ortFeld = new JTextField("");
 			this.ortFeld.setFocusTraversalKeys(
-												KeyboardFocusManager.FORWARD_TRAVERSAL_KEYS,
-												Collections.EMPTY_SET);
-	
+                KeyboardFocusManager.FORWARD_TRAVERSAL_KEYS,
+                Collections.EMPTY_SET);
+
 			this.ortFeld.addActionListener(new ActionListener()
-			{
+                {
 				@Override
 				public void actionPerformed(ActionEvent e)
-				{
+                    {
 					getSuchTimer().stop();
-					doSearch();
-				}
-			});
-	
+					filterBetreiberListe(getBetreiberTabelle());
+                    }
+            });
+
 			this.ortFeld.addKeyListener(new KeyAdapter()
-			{
+                {
 				@Override
 				public void keyPressed(KeyEvent e)
-				{
+                    {
 					if (e.getKeyCode() == KeyEvent.VK_TAB)
-					{
+                        {
 						getSuchTimer().stop();
 						doSearch();
-					}
-				}
-	
+                        }
+                    }
+
 				@Override
 				public void keyTyped(KeyEvent e)
-				{
+                    {
 					if (Character.isLetterOrDigit(e.getKeyChar()))
-					{
+                        {
 						if (getSuchTimer().isRunning())
-						{
+                            {
 							getSuchTimer().restart();
-						}
+                            }
 						else
-						{
+                            {
 							getSuchTimer().start();
-						}
-					}
-				}
-			});
-		}
+                            }
+                        }
+                    }
+            });
+            }
 		return this.ortFeld;
-	}
+        }
 
 	private JTextField getHausnrFeld()
-	{
+        {
 		if (this.hausnrFeld == null)
-		{
+            {
 			this.hausnrFeld = new BasicEntryField();
-	
+
 			this.hausnrFeld.addActionListener(new ActionListener()
-			{
+                {
 				@Override
 				public void actionPerformed(ActionEvent e)
-				{
+                    {
 					doSearch();
-				}
-			});
-		}
+                    }
+            });
+            }
 		return this.hausnrFeld;
-	}
+        }
+
+	private JButton getAwsvButton()
+        {
+		if (this.awsvButton == null)
+            {
+			this.awsvButton = new JButton("AwSV");
+			this.awsvButton.setToolTipText("nur AwSV Objekte");
+			this.awsvButton.addActionListener(new ActionListener()
+                {
+				@Override
+				public void actionPerformed(ActionEvent e)
+                    {
+					ListSelectionModel lsm = getBetreiberTabelle()
+                        .getSelectionModel();
+					if (!lsm.isSelectionEmpty())
+                        {
+						int selectedRow = lsm.getMinSelectionIndex();
+						Inhaber inh = BasisAdresseSuchen.this.inhaberModel
+                            .getRow(selectedRow);
+						log.debug("Standort " + inh + " angewählt.");
+						searchObjekteByBetreiber(inh,
+                            DatabaseConstants.BASIS_OBJEKTART_ABTEILUNG_AWSV);
+                        }
+                    }
+            });
+            }
+
+		return this.awsvButton;
+        }
+
+	private JButton getProbepktButton()
+        {
+		if (this.probepktButton == null)
+            {
+			this.probepktButton = new JButton("Probepunkte");
+			this.probepktButton
+                .setToolTipText("nur die Probenahmepunkte anzeigen");
+			this.probepktButton.addActionListener(new ActionListener()
+                {
+				@Override
+				public void actionPerformed(ActionEvent e)
+                    {
+					ListSelectionModel lsm = getBetreiberTabelle()
+                        .getSelectionModel();
+					if (!lsm.isSelectionEmpty())
+                        {
+						int selectedRow = lsm.getMinSelectionIndex();
+						Inhaber inh = BasisAdresseSuchen.this.inhaberModel
+                            .getRow(selectedRow);
+						log.debug("Standort " + inh + " angewählt.");
+						searchObjekteByBetreiber(inh,
+                            DatabaseConstants.BASIS_OBJEKTART_ID_PROBEPUNKT);
+                        }
+                    }
+            });
+            }
+
+		return this.probepktButton;
+        }
+
+	private JButton getIndirektButton()
+        {
+		if (this.indirektButton == null)
+            {
+			this.indirektButton = new JButton("Indirekt-Einl.");
+			this.indirektButton
+                .setToolTipText("nur die Indirekteinleiter anzeigen");
+			this.indirektButton.addActionListener(new ActionListener()
+                {
+				@Override
+				public void actionPerformed(ActionEvent e)
+                    {
+					ListSelectionModel lsm = getBetreiberTabelle()
+                        .getSelectionModel();
+					if (!lsm.isSelectionEmpty())
+                        {
+						int selectedRow = lsm.getMinSelectionIndex();
+						Inhaber inh = BasisAdresseSuchen.this.inhaberModel
+                            .getRow(selectedRow);
+						log.debug("Standort " + inh + " angewählt.");
+						searchObjekteByBetreiber(inh,
+                            DatabaseConstants.BASIS_OBJEKTART_ID_PROBEPUNKT);
+                        }
+                    }
+            });
+            }
+
+		return this.indirektButton;
+        }
+
+	private JButton getAnfallButton()
+        {
+		if (this.anfallButton == null)
+            {
+			this.anfallButton = new JButton("Anfallstellen");
+			this.anfallButton
+                .setToolTipText("nur die Anfallstellen anzeigen");
+			this.anfallButton.addActionListener(new ActionListener()
+                {
+				@Override
+				public void actionPerformed(ActionEvent e)
+                    {
+					ListSelectionModel lsm = getBetreiberTabelle()
+                        .getSelectionModel();
+					if (!lsm.isSelectionEmpty())
+                        {
+						int selectedRow = lsm.getMinSelectionIndex();
+						Inhaber inh = BasisAdresseSuchen.this.inhaberModel
+                            .getRow(selectedRow);
+						log.debug("Standort " + inh + " angewählt.");
+						searchObjekteByBetreiber(inh,
+                            DatabaseConstants.BASIS_OBJEKTART_ID_ANFALLSTELLE);
+                        }
+                    }
+            });
+            }
+
+		return this.anfallButton;
+        }
+
+	private JButton getGenButton()
+        {
+		if (this.genButton == null)
+            {
+			this.genButton = new JButton("Genehmigungen");
+			this.genButton
+                .setToolTipText("nur die Genehmigungen anzeigen");
+			this.genButton.addActionListener(new ActionListener()
+                {
+				@Override
+				public void actionPerformed(ActionEvent e)
+                    {
+					ListSelectionModel lsm = getBetreiberTabelle()
+                        .getSelectionModel();
+					if (!lsm.isSelectionEmpty())
+                        {
+						int selectedRow = lsm.getMinSelectionIndex();
+						Inhaber inh = BasisAdresseSuchen.this.inhaberModel
+                            .getRow(selectedRow);
+						log.debug("Standort " + inh + " angewählt.");
+						searchObjekteByBetreiber(inh,
+                            DatabaseConstants.BASIS_OBJEKTART_ID_GENEHMIGUNG);
+                        }
+                    }
+            });
+            }
+
+		return this.genButton;
+        }
 
 	private Timer getSuchTimer()
-	{
+        {
 		if (this.suchTimer == null)
-		{
+            {
 			this.suchTimer = new Timer(900, new ActionListener()
-			{
+                {
 				@Override
 				public void actionPerformed(ActionEvent e)
-				{
-	
+                    {
+
 					// Was diese ganze "SwingWorkerVariant"-Geschichte
 					// soll, steht unter
 					// http://www.javaworld.com/javaworld/jw-06-2003/jw-0606-swingworker.html
 					// Ist auch ausgedruckt im Ordner im Regal. -DK
 					SwingWorkerVariant worker = new SwingWorkerVariant(
-							getStrassenFeld())
-					{
+                        getStrassenFeld())
+                        {
 						protected String oldText = "";
 						private String newText = "";
-	
+
 						@Override
 						protected void doNonUILogic()
-						{
+                            {
 							this.oldText = getStrassenFeld().getText();
 							if (this.oldText.equals(""))
-							{
+                                {
 								this.newText = "";
-							}
+                                }
 							else
-							{
+                                {
 								String suchText = AuikUtils
-										.sanitizeQueryInput(this.oldText);
-								BasisStrassen str = DatabaseQuery
-										.findStrasse(suchText);
-	
+                                    .sanitizeQueryInput(this.oldText);
+								String str = DatabaseQuery
+                                    .getTabStreet(suchText);
+
 								if (str != null)
-								{
-									this.newText = str.getStrasse();
-								}
+                                    {
+									this.newText = str;
+                                    }
 								else
-								{
+                                    {
 									this.newText = this.oldText;
-								}
-							}
-						}
-	
+                                    }
+                                }
+                            }
+
 						@Override
 						protected void doUIUpdateLogic()
-						{
+                            {
 							getStrassenFeld().setText(this.newText);
 							getStrassenFeld().setSelectionStart(
-																this.oldText.length());
+                                this.oldText.length());
 							getStrassenFeld().setSelectionEnd(
-																this.newText.length());
-						}
-					};
+                                this.newText.length());
+                            }
+                    };
 					worker.start();
-				}
-			});
+                    }
+            });
 			this.suchTimer.setRepeats(false);
-		}
-	
+            }
+
 		return this.suchTimer;
-	}
+        }
 
 	private JComboBox getSuchBox() {
 	    if (this.suchBox == null) {
@@ -1302,7 +1386,7 @@ public class BasisAdresseSuchen extends AbstractModul {
 	                new NamedObject("Zusatz:", "zusatz"),
 	                new NamedObject("Irgendwo", null)});
 	        this.suchBox.setSelectedIndex(2);
-	    }
+        }
 	    return this.suchBox;
-	}
+    }
 }

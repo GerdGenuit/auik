@@ -42,13 +42,18 @@ package de.bielefeld.umweltamt.aui.module;
 import java.awt.Point;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.FocusAdapter;
+import java.awt.event.FocusEvent;
 import java.awt.event.KeyEvent;
 import java.awt.event.MouseEvent;
 
 import javax.swing.AbstractAction;
 import javax.swing.Action;
+import javax.swing.BorderFactory;
+import javax.swing.DefaultCellEditor;
 import javax.swing.Icon;
 import javax.swing.JButton;
+import javax.swing.JComboBox;
 import javax.swing.JMenuItem;
 import javax.swing.JPanel;
 import javax.swing.JPopupMenu;
@@ -59,6 +64,7 @@ import javax.swing.ListSelectionModel;
 import javax.swing.table.TableColumn;
 
 import com.jgoodies.forms.builder.DefaultFormBuilder;
+import com.jgoodies.forms.factories.Paddings;
 import com.jgoodies.forms.layout.CellConstraints;
 import com.jgoodies.forms.layout.FormLayout;
 
@@ -66,9 +72,11 @@ import de.bielefeld.umweltamt.aui.AbstractModul;
 import de.bielefeld.umweltamt.aui.GUIManager;
 import de.bielefeld.umweltamt.aui.HauptFrame;
 import de.bielefeld.umweltamt.aui.mappings.DatabaseQuery;
-import de.bielefeld.umweltamt.aui.mappings.atl.AtlParameter;
+import de.bielefeld.umweltamt.aui.mappings.atl.Parameter;
+import de.bielefeld.umweltamt.aui.module.common.editors.ProbenEditor;
 import de.bielefeld.umweltamt.aui.module.common.tablemodels.EditorParameterModel;
 import de.bielefeld.umweltamt.aui.utils.AuikLogger;
+import de.bielefeld.umweltamt.aui.utils.ComboBoxRenderer;
 import de.bielefeld.umweltamt.aui.utils.SwingWorkerVariant;
 import de.bielefeld.umweltamt.aui.utils.tablemodelbase.ListTableModel;
 
@@ -88,12 +96,14 @@ public class EditorParameter extends AbstractModul {
 
     /** Das TableModel für die Ergebnis-Tabelle */
     private EditorParameterModel tmodel;
-    
+
     private Action resultLoeschAction;
     private JPopupMenu resultPopup;
+    private JComboBox methodeBox;
+    private JComboBox einheitBox;
 
-	
-	
+
+
     @Override
     public Icon getIcon() {
         return super.getIcon("edit32.png");
@@ -157,18 +167,18 @@ public class EditorParameter extends AbstractModul {
             // Noch etwas Layout...
             FormLayout layout = new FormLayout("pref, 4dlu, pref:grow", "pref, 3dlu, f:150dlu:grow");
             DefaultFormBuilder builder = new DefaultFormBuilder(layout);
-            
-            builder.setDefaultDialogBorder();
+;
             CellConstraints cc = new CellConstraints();
 
             builder.add(submitButton, cc.xy(1, 1));
             builder.add(getTableScroller(), cc.xyw(1, 3, 3));
 
             panel = builder.getPanel();
+            panel.setBorder(Paddings.DIALOG);
         }
 
         return panel;
-        
+
     }
 
     /* (non-Javadoc)
@@ -189,8 +199,9 @@ public class EditorParameter extends AbstractModul {
             resultTable = new JTable(getTableModel());
             resultTable.setAutoCreateRowSorter(true);
             resultTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+            resultTable.setRowHeight(25);
 
-			this.resultTable
+			resultTable
 					.setAutoResizeMode(JTable.AUTO_RESIZE_NEXT_COLUMN);
 			TableColumn column = null;
 			// DefaultTableCellRenderer centerRenderer = new
@@ -211,10 +222,47 @@ public class EditorParameter extends AbstractModul {
 				else if (i == 1)
 				{
 					// column.setMaxWidth(70);
-					column.setPreferredWidth(200);
+					column.setPreferredWidth(350);
 				}
 			}
-			
+
+	        // Methode
+	        TableColumn methodeColumn = this.resultTable.getColumnModel()
+	            .getColumn(2);
+	        methodeColumn.setPreferredWidth(200);
+
+	        methodeBox = new JComboBox(DatabaseQuery.getMapElkaAnalysemethode());
+	        methodeBox.setEditable(false);
+	        methodeBox.addFocusListener(new FocusAdapter() {
+	            @Override
+	            public void focusGained(FocusEvent e) {
+	                EditorParameter.this.methodeBox.showPopup();
+	            }
+	        });
+	        methodeBox.setBorder(BorderFactory.createEmptyBorder());
+
+	        methodeColumn.setCellEditor(new DefaultCellEditor(methodeBox));
+	        methodeColumn.setCellRenderer(new ComboBoxRenderer());
+
+	        // Einheit
+	        TableColumn einheitColumn = this.resultTable.getColumnModel()
+	            .getColumn(3);
+	        einheitColumn.setPreferredWidth(10);
+
+	        einheitBox = new JComboBox(DatabaseQuery.getEinheiten());
+	        einheitBox.setEditable(false);
+	        einheitBox.addFocusListener(new FocusAdapter() {
+	            @Override
+	            public void focusGained(FocusEvent e) {
+	                EditorParameter.this.einheitBox.showPopup();
+	            }
+	        });
+	        einheitBox.setBorder(BorderFactory.createEmptyBorder());
+
+	        einheitColumn.setCellEditor(new DefaultCellEditor(einheitBox));
+	        einheitColumn.setCellRenderer(new ComboBoxRenderer());
+
+
             resultTable.getInputMap().put(
                 (KeyStroke) getResultLoeschAction().getValue(
                     Action.ACCELERATOR_KEY),
@@ -257,11 +305,11 @@ public class EditorParameter extends AbstractModul {
 	        JMenuItem loeschItem = new JMenuItem(getResultLoeschAction());
 	        this.resultPopup.add(loeschItem);
 	    }
-	
+
 	    if (e.isPopupTrigger()) {
 	        Point origin = e.getPoint();
 	        int row = this.resultTable.rowAtPoint(origin);
-	
+
 	        if (row != -1) {
 	            this.resultTable.setRowSelectionInterval(row, row);
 	            this.resultPopup.show(e.getComponent(), e.getX(), e.getY());
@@ -279,7 +327,7 @@ public class EditorParameter extends AbstractModul {
                 public void actionPerformed(ActionEvent e) {
                     int row = getResultTable().getSelectedRow();
                     if (row != -1 && getResultTable().getEditingRow() == -1) {
-                    	AtlParameter para = EditorParameter.this.tmodel
+                    	Parameter para = EditorParameter.this.tmodel
                             .getRow(row);
 
                         if (GUIManager.getInstance().showQuestion(

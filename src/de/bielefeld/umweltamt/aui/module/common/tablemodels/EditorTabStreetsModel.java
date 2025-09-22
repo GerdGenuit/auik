@@ -22,8 +22,7 @@
 package de.bielefeld.umweltamt.aui.module.common.tablemodels;
 
 import de.bielefeld.umweltamt.aui.mappings.DatabaseQuery;
-import de.bielefeld.umweltamt.aui.mappings.basis.BasisStrassen;
-import de.bielefeld.umweltamt.aui.mappings.basis.BasisTabStreets;
+import de.bielefeld.umweltamt.aui.mappings.basis.TabStreets;
 import de.bielefeld.umweltamt.aui.utils.tablemodelbase.EditableListTableModel;
 
 /**
@@ -65,7 +64,7 @@ public class EditorTabStreetsModel extends EditableListTableModel {
      */
     @Override
     public Object getColumnValue(Object objectAtRow, int columnIndex) {
-        BasisTabStreets str = (BasisTabStreets) objectAtRow;
+        TabStreets str = (TabStreets) objectAtRow;
         Object tmp;
 
         switch (columnIndex) {
@@ -96,34 +95,34 @@ public class EditorTabStreetsModel extends EditableListTableModel {
 
 	@Override
 	public void editObject(Object objectAtRow, int columnIndex, Object newValue) {
-		
-		BasisTabStreets tmp = (BasisTabStreets) objectAtRow;
+
+		TabStreets tmp = (TabStreets) objectAtRow;
 		switch (columnIndex) {
         case 0:
         	String tmpStrasse = (String) newValue;
         	tmp.setName(tmpStrasse);
         	break;
-        	
+
         case 1:
         	String tmpNr = (String) newValue;
         	tmp.setNr(tmpNr);
         	break;
-        	
+
         case 2:
         	Float x = (Float) newValue;
         	tmp.setX(x);
         	break;
-        	
+
         case 3:
         	Float y = (Float) newValue;
         	tmp.setY(y);
         	break;
 
         default:
-            break;        	
-        	
+            break;
+
 		}
-		BasisTabStreets.merge(tmp);
+		TabStreets.merge(tmp);
 	}
 
     /**
@@ -131,8 +130,8 @@ public class EditorTabStreetsModel extends EditableListTableModel {
      * @param rowIndex Die Zeile
      * @return Das Objekt bei rowIndex
      */
-    public BasisTabStreets getRow(int rowIndex) {
-        return (BasisTabStreets) getObjectAtRow(rowIndex);
+    public TabStreets getRow(int rowIndex) {
+        return (TabStreets) getObjectAtRow(rowIndex);
     }
 
 	@Override

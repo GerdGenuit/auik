@@ -73,6 +73,7 @@ package de.bielefeld.umweltamt.aui;
 import java.awt.BorderLayout;
 import java.awt.CardLayout;
 import java.awt.Color;
+import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.Frame;
@@ -80,7 +81,6 @@ import java.awt.HeadlessException;
 import java.awt.KeyEventDispatcher;
 import java.awt.KeyboardFocusManager;
 import java.awt.Point;
-import java.awt.Rectangle;
 import java.awt.Window;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -89,10 +89,12 @@ import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.io.File;
 import java.io.IOException;
+import java.util.List;
 
 import javax.swing.AbstractAction;
 import javax.swing.Action;
 import javax.swing.BorderFactory;
+import javax.swing.BoxLayout;
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JDialog;
@@ -102,6 +104,7 @@ import javax.swing.JLabel;
 import javax.swing.JMenu;
 import javax.swing.JMenuBar;
 import javax.swing.JMenuItem;
+import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JPasswordField;
 import javax.swing.JPopupMenu;
@@ -113,23 +116,29 @@ import javax.swing.JToolBar;
 import javax.swing.SwingUtilities;
 import javax.swing.Timer;
 import javax.swing.UIManager;
+import javax.swing.border.EmptyBorder;
 
 import org.hibernate.HibernateException;
+import org.hibernate.SQLQuery;
+import org.hibernate.Session;
+import org.jfree.ui.tabbedui.VerticalLayout;
 
 import com.jgoodies.forms.builder.PanelBuilder;
+import com.jgoodies.forms.factories.Paddings;
 import com.jgoodies.forms.layout.CellConstraints;
 import com.jgoodies.forms.layout.FormLayout;
-import com.jgoodies.plaf.FontSizeHints;
-import com.jgoodies.plaf.HeaderStyle;
-import com.jgoodies.plaf.Options;
-import com.jgoodies.uif_lite.component.Factory;
-import com.jgoodies.uif_lite.panel.SimpleInternalFrame;
+import com.jgoodies.looks.HeaderStyle;
+import com.jgoodies.looks.Options;
 
+import de.bielefeld.umweltamt.aui.gui.PasswordChangeDialog;
 import de.bielefeld.umweltamt.aui.module.common.editors.EinstellungenEditor;
+import de.bielefeld.umweltamt.aui.module.GebuehrenEditor;
 import de.bielefeld.umweltamt.aui.utils.AuikLogger;
 import de.bielefeld.umweltamt.aui.utils.AuikUtils;
+import de.bielefeld.umweltamt.aui.utils.ComponentFactory;
 import de.bielefeld.umweltamt.aui.utils.GradientPanel;
 import de.bielefeld.umweltamt.aui.utils.SwingWorkerVariant;
+import de.bielefeld.umweltamt.aui.utils.TitledPanel;
 
 /**
  * Das Hauptfenster des AUI-K. Dieses Fenster beinhaltet alle weiteren
@@ -181,6 +190,10 @@ public class HauptFrame extends JFrame {
     private JMenuItem aboutMenuItem = null;
     private JMenuItem DokuItem = null;
 
+    private JMenu editMenu = null;
+    private JMenuItem feeMenuItem = null;
+    private JMenuItem passwordChangeMenuItem = null;
+
     private JPanel titlePanel = null;
 
     private JPanel statusPanel = null;
@@ -188,11 +201,11 @@ public class HauptFrame extends JFrame {
 
     private JSplitPane splitPane = null;
 
-    private SimpleInternalFrame leftFrame = null;
+    private TitledPanel leftFrame = null;
     private JScrollPane leftScroller = null;
     private JPanel leftCardPanel = null;
 
-    private SimpleInternalFrame rightFrame = null;
+    private TitledPanel rightFrame = null;
     private JPanel rightCardPanel = null;
 
     // Das Kategorien-Menü
@@ -237,7 +250,7 @@ public class HauptFrame extends JFrame {
 
             // Look & Feel umschalten
             UIManager
-                    .setLookAndFeel("com.jgoodies.plaf.windows.ExtWindowsLookAndFeel");
+                    .setLookAndFeel(Options.getSystemLookAndFeelClassName());
 
             /*
              * Falls mal ein Wechsel auf Linux anstehen sollte, wird der
@@ -246,7 +259,7 @@ public class HauptFrame extends JFrame {
              * haben möchte. Dann einfach statt der Zeile oben die folgende
              * nehmen:
              */
-            // UIManager.setLookAndFeel("com.jgoodies.plaf.plastic.PlasticXPLookAndFeel");
+            // UIManager.setLookAndFeel("com.jgoodies.looks.plastic.PlasticXPLookAndFeel");
 
             // Erleichert das Finden von manchen Layout-Fehlern
             // ClearLookManager.setMode(ClearLookMode.DEBUG);
@@ -294,6 +307,19 @@ public class HauptFrame extends JFrame {
         String db = settings.getSetting("auik.system.dburl");
         if (db != null && !db.equals("")) {
             HibernateSessionFactory.setDBUrl(db);
+
+            String dialectName = db.split(":")[1];
+            //Set DB dialect and driver
+            try {
+                log.info(String.format("Database dialect: %s", dialectName));
+                String dialect = HibernateSessionFactory.getDialectClassByDialectName(dialectName);
+                String driver = HibernateSessionFactory.getDriverByDialectClass(dialect);
+                HibernateSessionFactory.setDBDialect(dialect);
+                HibernateSessionFactory.setDBDriver(driver);
+            } catch (IllegalArgumentException iae) {
+                log.error("Error setting up db driver: " + iae);
+                this.close();
+            }
         }
 
         // Fragt die Benutzerdaten ab, wenn die Abfrage erfolgreich war...
@@ -313,6 +339,9 @@ public class HauptFrame extends JFrame {
     }
 
     private boolean askForDBCredentials() {
+        if (!HibernateSessionFactory.doesDialectNeedCredentials()) {
+            return true;
+        }
         BenutzerDatenDialog benutzerDialog = new BenutzerDatenDialog(this);
         locateOnScreen(benutzerDialog);
         return benutzerDialog.loginSuccessful();
@@ -397,8 +426,9 @@ public class HauptFrame extends JFrame {
                         }
                     });
 
-            viewMenuButton
-                    .setForeground(getLeftFrame().getTextForeground(true));
+            //TODO:
+            // viewMenuButton
+            //         .setForeground(getLeftFrame().getTextForeground(true));
             viewMenuButton.setOpaque(false);
             viewMenuButton.setHorizontalTextPosition(JButton.LEADING);
             viewMenuButton
@@ -433,8 +463,9 @@ public class HauptFrame extends JFrame {
                 new JButton(AuikUtils.getIcon(16, "back.png", desc));
 
             modulBackButton.setToolTipText(desc);
-            modulBackButton.setForeground(
-                    getRightFrame().getTextForeground(true));
+            //TODO:
+            // modulBackButton.setForeground(
+            //         getRightFrame().getTextForeground(true));
             modulBackButton.setOpaque(false);
 
             modulBackButton.addActionListener(new ActionListener() {
@@ -459,8 +490,10 @@ public class HauptFrame extends JFrame {
                 new JButton(AuikUtils.getIcon(16, "forward.png", desc));
 
             modulFwdButton.setToolTipText(desc);
-            modulFwdButton.setForeground(
-                    getRightFrame().getTextForeground(true));
+
+            //TODO:
+            // modulFwdButton.setForeground(
+            //         getRightFrame().getTextForeground(true));
             modulFwdButton.setOpaque(false);
 
             modulFwdButton.addActionListener(new ActionListener() {
@@ -544,6 +577,7 @@ public class HauptFrame extends JFrame {
         if (hauptMenue == null) {
             hauptMenue = new JMenuBar();
             hauptMenue.add(getFileMenu());
+            hauptMenue.add(getEditMenu());
             // hauptMenue.add(Box.createHorizontalGlue());
             hauptMenue.add(getHelpMenu());
             hauptMenue.putClientProperty(
@@ -563,11 +597,26 @@ public class HauptFrame extends JFrame {
             fileMenu.setText("Datei");
             fileMenu.setMnemonic(KeyEvent.VK_D);
             // fileMenu.putClientProperty(Options.NO_ICONS_KEY, Boolean.TRUE);
+            fileMenu.add(getPasswordChangeItem());
             fileMenu.add(getSettingsMenuItem());
             fileMenu.addSeparator();
             fileMenu.add(getExitMenuItem());
         }
         return fileMenu;
+    }
+
+    /**
+     * Get the edit menu
+     * @return Edit menu instance
+     */
+    private JMenu getEditMenu() {
+        if (editMenu == null) {
+            editMenu = new JMenu();
+            editMenu.setText("Bearbeiten");
+            editMenu.setMnemonic(KeyEvent.VK_B);
+            editMenu.add(getFeeMenuItem());
+        }
+        return editMenu;
     }
 
     /**
@@ -585,6 +634,54 @@ public class HauptFrame extends JFrame {
             helpMenu.add(getDoku());
         }
         return helpMenu;
+    }
+
+
+    /**
+     * Get the fee menu item
+     * @return Fee menu item instance
+     */
+    private JMenuItem getFeeMenuItem() {
+        if (feeMenuItem == null) {
+            feeMenuItem = new JMenuItem();
+            feeMenuItem.setText("Gebühren");
+            feeMenuItem.setMnemonic(KeyEvent.VK_G);
+            feeMenuItem.setEnabled(true);
+            final JFrame owner = this;
+            feeMenuItem.addActionListener(new ActionListener() {
+                @Override
+                public void actionPerformed(java.awt.event.ActionEvent e) {
+                    GebuehrenEditor gebuehrenPanel = new GebuehrenEditor(owner);
+                    gebuehrenPanel.setLocationRelativeTo(getRightFrame());
+                    gebuehrenPanel.setVisible(true);
+                }
+            });
+        }
+        return feeMenuItem;
+    }
+
+    /**
+     * Create password change menu item
+     * @return Menu item
+     */
+    private JMenuItem getPasswordChangeItem() {
+        if (passwordChangeMenuItem == null) {
+            passwordChangeMenuItem = new JMenuItem();
+            passwordChangeMenuItem.setText("Password ändern");
+            passwordChangeMenuItem.setMnemonic(KeyEvent.VK_P);
+            passwordChangeMenuItem.setEnabled(true);
+            final JFrame owner = this;
+            passwordChangeMenuItem.addActionListener(new java.awt.event.ActionListener() {
+                @Override
+                public void actionPerformed(java.awt.event.ActionEvent e) {
+                    PasswordChangeDialog pwChangeDialog = new PasswordChangeDialog(owner);
+                    //Show dialog above right panel
+                    pwChangeDialog.setLocationRelativeTo(getRightFrame());
+                    pwChangeDialog.setVisible(true);
+                }
+            });
+        }
+        return passwordChangeMenuItem;
     }
 
     /**
@@ -738,7 +835,7 @@ public class HauptFrame extends JFrame {
      */
     private JSplitPane getSplitPane() {
         if (splitPane == null) {
-            splitPane = Factory.createStrippedSplitPane(
+            splitPane = ComponentFactory.createStrippedSplitPane(
                     JSplitPane.HORIZONTAL_SPLIT, getLeftFrame(),
                     getRightFrame(), 0.08f);
         }
@@ -748,13 +845,13 @@ public class HauptFrame extends JFrame {
     /**
      * This method initializes leftFrame
      *
-     * @return com.jgoodies.uif_life.panel.SimpleInternalFrame
+     * @return com.jgoodies.uif_life.panel.JInternalFrame
      */
-    protected SimpleInternalFrame getLeftFrame() {
+    protected TitledPanel getLeftFrame() {
         if (leftFrame == null) {
-            leftFrame = new SimpleInternalFrame(" ");
+            leftFrame = new TitledPanel(" ");
 
-            leftFrame.setMinimumSize(new Dimension(100, 0));
+            leftFrame.setMinimumSize(new Dimension(100, 100));
             leftFrame.setPreferredSize(leftFrame.getMinimumSize());
 
             leftFrame.setToolBar(getViewMenuBar());
@@ -766,13 +863,13 @@ public class HauptFrame extends JFrame {
     /**
      * This method initializes rightFrame
      *
-     * @return com.jgoodies.uif_life.panel.SimpleInternalFrame
+     * @return com.jgoodies.uif_life.panel.JInternalFrame
      */
-    protected SimpleInternalFrame getRightFrame() {
+    protected TitledPanel getRightFrame() {
         if (rightFrame == null) {
-            rightFrame = new SimpleInternalFrame(" ");
+            rightFrame = new TitledPanel(" ");
 
-            rightFrame.setMinimumSize(new Dimension(250, 0));
+            rightFrame.setMinimumSize(new Dimension(250, 100));
 
             rightFrame.setToolBar(getModulBar());
             rightFrame.setContent(getRightCardPanel());
@@ -806,7 +903,7 @@ public class HauptFrame extends JFrame {
         }
         return leftScroller;
     }
-    
+
 
     /**
      * @return Returns the leftCardPanel.
@@ -1072,7 +1169,6 @@ public class HauptFrame extends JFrame {
             layout.setRowGroups(new int[][]{{3, 5}});
 
             PanelBuilder builder = new PanelBuilder(layout);
-            builder.setDefaultDialogBorder();
             CellConstraints cc = new CellConstraints();
 
             builder.add(textLabel, cc.xyw(1, 1, 5));
@@ -1081,8 +1177,9 @@ public class HauptFrame extends JFrame {
             builder.addLabel("Passwort:", cc.xy(1, 5));
             builder.add(passwortFeld, cc.xy(3, 5));
             builder.add(loginButton, cc.xy(5, 5));
-
-            this.setContentPane(builder.getPanel());
+            JPanel panel = builder.getPanel();
+            panel.setBorder(Paddings.DIALOG);
+            this.setContentPane(panel);
             this.pack();
 
             /* Set the focus to the password field */
@@ -1101,12 +1198,12 @@ public class HauptFrame extends JFrame {
             return success;
         }
     }
-    
+
 
     /* setzt das Modulfenster zurück nach oben
      * panel neu aufbauen und scrollbar nur wenn nötig anzeigen wäre evtl. sinnvoller
     */
-    
+
     public void resetLeftScroller(){
     	JScrollBar vertSB = leftScroller.getVerticalScrollBar();
     	vertSB.setValue(vertSB.getMinimum());

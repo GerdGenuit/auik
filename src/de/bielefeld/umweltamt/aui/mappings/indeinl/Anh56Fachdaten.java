@@ -23,14 +23,17 @@
 
 package de.bielefeld.umweltamt.aui.mappings.indeinl;
 
+import de.bielefeld.umweltamt.aui.HibernateSessionFactory;
 import de.bielefeld.umweltamt.aui.mappings.DatabaseAccess;
 import de.bielefeld.umweltamt.aui.mappings.DatabaseClassToString;
 import de.bielefeld.umweltamt.aui.mappings.DatabaseQuery;
 import de.bielefeld.umweltamt.aui.mappings.DatabaseSerialVersionUID;
-import de.bielefeld.umweltamt.aui.mappings.basis.BasisObjekt;
+import de.bielefeld.umweltamt.aui.mappings.basis.Objekt;
+import de.bielefeld.umweltamt.aui.mappings.elka.Anfallstelle;
 import de.bielefeld.umweltamt.aui.utils.AuikLogger;
 import java.util.Date;
 import java.util.List;
+import java.util.Set;
 
 /**
  * A class that represents a row in the Anh56Fachdaten database table.<br>
@@ -42,10 +45,10 @@ public class Anh56Fachdaten  implements java.io.Serializable {
     /** Generated serialVersionUID for Serializable interface */
     private static final long serialVersionUID =
         DatabaseSerialVersionUID.forAnh56Fachdaten;
-    
+
     /* Primary key, foreign keys (relations) and table columns */
     private Integer id;
-    private BasisObjekt basisObjekt;
+    private Anfallstelle anfallstelle;
     private String druckverfahren;
     private String verbrauch;
     private String sachbearbeiterrav;
@@ -74,18 +77,18 @@ public class Anh56Fachdaten  implements java.io.Serializable {
 
     /** Minimal constructor */
     public Anh56Fachdaten(
-        Integer id, BasisObjekt basisObjekt, boolean enabled, boolean deleted) {
+        Integer id, Anfallstelle anfallstelle, boolean enabled, boolean deleted) {
         this.id = id;
-        this.basisObjekt = basisObjekt;
+        this.anfallstelle = anfallstelle;
         this.enabled = enabled;
         this.deleted = deleted;
     }
 
     /** Full constructor */
     public Anh56Fachdaten(
-        Integer id, BasisObjekt basisObjekt, String druckverfahren, String verbrauch, String sachbearbeiterrav, String sachbearbeiterheepen, String entsorgung, Boolean abwasseranfall, Boolean genpflicht, Boolean aba, Date gen58, Date gen59, String bemerkungen, Boolean abfallrechtlentsorg, Boolean spuelwasser, Boolean leimabwasser, Date erfasstam, boolean enabled, boolean deleted) {
+        Integer id, Anfallstelle anfallstelle, String druckverfahren, String verbrauch, String sachbearbeiterrav, String sachbearbeiterheepen, String entsorgung, Boolean abwasseranfall, Boolean genpflicht, Boolean aba, Date gen58, Date gen59, String bemerkungen, Boolean abfallrechtlentsorg, Boolean spuelwasser, Boolean leimabwasser, Date erfasstam, boolean enabled, boolean deleted) {
         this.id = id;
-        this.basisObjekt = basisObjekt;
+        this.anfallstelle = anfallstelle;
         this.druckverfahren = druckverfahren;
         this.verbrauch = verbrauch;
         this.sachbearbeiterrav = sachbearbeiterrav;
@@ -114,12 +117,12 @@ public class Anh56Fachdaten  implements java.io.Serializable {
         this.id = id;
     }
 
-    public BasisObjekt getBasisObjekt() {
-        return this.basisObjekt;
+    public Anfallstelle getAnfallstelle() {
+        return this.anfallstelle;
     }
 
-    public void setBasisObjekt(BasisObjekt basisObjekt) {
-        this.basisObjekt = basisObjekt;
+    public void setAnfallstelle(Anfallstelle anfallstelle) {
+        this.anfallstelle = anfallstelle;
     }
 
     public String getDruckverfahren() {
@@ -267,7 +270,7 @@ public class Anh56Fachdaten  implements java.io.Serializable {
      */
     @Override
     public String toString() {
-        return DatabaseClassToString.toStringForClass(this); 
+        return DatabaseClassToString.toStringForClass(this);
     }
 
     /**
@@ -276,27 +279,27 @@ public class Anh56Fachdaten  implements java.io.Serializable {
      */
     public String toDebugString() {
         StringBuffer buffer = new StringBuffer();
-        
+
         buffer.append(getClass().getSimpleName()).append("@").append(Integer.toHexString(hashCode())).append(" [");
-        buffer.append("id").append("='").append(getId()).append("' ");			
-        buffer.append("basisObjekt").append("='").append(getBasisObjekt()).append("' ");			
-        buffer.append("druckverfahren").append("='").append(getDruckverfahren()).append("' ");			
-        buffer.append("verbrauch").append("='").append(getVerbrauch()).append("' ");			
-        buffer.append("sachbearbeiterrav").append("='").append(getSachbearbeiterrav()).append("' ");			
-        buffer.append("sachbearbeiterheepen").append("='").append(getSachbearbeiterheepen()).append("' ");			
-        buffer.append("entsorgung").append("='").append(getEntsorgung()).append("' ");			
-        buffer.append("abwasseranfall").append("='").append(getAbwasseranfall()).append("' ");			
-        buffer.append("genpflicht").append("='").append(getGenpflicht()).append("' ");			
-        buffer.append("aba").append("='").append(getAba()).append("' ");			
-        buffer.append("gen58").append("='").append(getGen58()).append("' ");			
-        buffer.append("gen59").append("='").append(getGen59()).append("' ");			
-        buffer.append("bemerkungen").append("='").append(getBemerkungen()).append("' ");			
-        buffer.append("abfallrechtlentsorg").append("='").append(getAbfallrechtlentsorg()).append("' ");			
-        buffer.append("spuelwasser").append("='").append(getSpuelwasser()).append("' ");			
-        buffer.append("leimabwasser").append("='").append(getLeimabwasser()).append("' ");			
-        buffer.append("erfasstam").append("='").append(getErfasstam()).append("' ");			
-        buffer.append("enabled").append("='").append(isEnabled()).append("' ");			
-        buffer.append("deleted").append("='").append(isDeleted()).append("' ");			
+        buffer.append("id").append("='").append(getId()).append("' ");
+        buffer.append("anfallstelle").append("='").append(getAnfallstelle()).append("' ");
+        buffer.append("druckverfahren").append("='").append(getDruckverfahren()).append("' ");
+        buffer.append("verbrauch").append("='").append(getVerbrauch()).append("' ");
+        buffer.append("sachbearbeiterrav").append("='").append(getSachbearbeiterrav()).append("' ");
+        buffer.append("sachbearbeiterheepen").append("='").append(getSachbearbeiterheepen()).append("' ");
+        buffer.append("entsorgung").append("='").append(getEntsorgung()).append("' ");
+        buffer.append("abwasseranfall").append("='").append(getAbwasseranfall()).append("' ");
+        buffer.append("genpflicht").append("='").append(getGenpflicht()).append("' ");
+        buffer.append("aba").append("='").append(getAba()).append("' ");
+        buffer.append("gen58").append("='").append(getGen58()).append("' ");
+        buffer.append("gen59").append("='").append(getGen59()).append("' ");
+        buffer.append("bemerkungen").append("='").append(getBemerkungen()).append("' ");
+        buffer.append("abfallrechtlentsorg").append("='").append(getAbfallrechtlentsorg()).append("' ");
+        buffer.append("spuelwasser").append("='").append(getSpuelwasser()).append("' ");
+        buffer.append("leimabwasser").append("='").append(getLeimabwasser()).append("' ");
+        buffer.append("erfasstam").append("='").append(getErfasstam()).append("' ");
+        buffer.append("enabled").append("='").append(isEnabled()).append("' ");
+        buffer.append("deleted").append("='").append(isDeleted()).append("' ");
         buffer.append("]");
 
         return buffer.toString();
@@ -328,7 +331,7 @@ public class Anh56Fachdaten  implements java.io.Serializable {
         result = result * 37 + idValue;
         return result;
     }
-    
+
     /**
      * Merge (save or update) a detached instance
      * @param detachedInstance the instance to merge
@@ -362,26 +365,26 @@ public class Anh56Fachdaten  implements java.io.Serializable {
      * @param copy Anh56Fachdaten
      */
     private void copy(Anh56Fachdaten copy) {
-        this.id = copy.getId();            
-        this.basisObjekt = copy.getBasisObjekt();            
-        this.druckverfahren = copy.getDruckverfahren();            
-        this.verbrauch = copy.getVerbrauch();            
-        this.sachbearbeiterrav = copy.getSachbearbeiterrav();            
-        this.sachbearbeiterheepen = copy.getSachbearbeiterheepen();            
-        this.entsorgung = copy.getEntsorgung();            
-        this.abwasseranfall = copy.getAbwasseranfall();            
-        this.genpflicht = copy.getGenpflicht();            
-        this.aba = copy.getAba();            
-        this.gen58 = copy.getGen58();            
-        this.gen59 = copy.getGen59();            
-        this.bemerkungen = copy.getBemerkungen();            
-        this.abfallrechtlentsorg = copy.getAbfallrechtlentsorg();            
-        this.spuelwasser = copy.getSpuelwasser();            
-        this.leimabwasser = copy.getLeimabwasser();            
-        this.erfasstam = copy.getErfasstam();            
-        this.enabled = copy.isEnabled();            
-        this.deleted = copy.isDeleted();            
-    }    
+        this.id = copy.getId();
+        this.anfallstelle = copy.getAnfallstelle();
+        this.druckverfahren = copy.getDruckverfahren();
+        this.verbrauch = copy.getVerbrauch();
+        this.sachbearbeiterrav = copy.getSachbearbeiterrav();
+        this.sachbearbeiterheepen = copy.getSachbearbeiterheepen();
+        this.entsorgung = copy.getEntsorgung();
+        this.abwasseranfall = copy.getAbwasseranfall();
+        this.genpflicht = copy.getGenpflicht();
+        this.aba = copy.getAba();
+        this.gen58 = copy.getGen58();
+        this.gen59 = copy.getGen59();
+        this.bemerkungen = copy.getBemerkungen();
+        this.abfallrechtlentsorg = copy.getAbfallrechtlentsorg();
+        this.spuelwasser = copy.getSpuelwasser();
+        this.leimabwasser = copy.getLeimabwasser();
+        this.erfasstam = copy.getErfasstam();
+        this.enabled = copy.isEnabled();
+        this.deleted = copy.isDeleted();
+    }
 
     /**
      * Delete (mark as deleted) a detached instance
@@ -426,16 +429,11 @@ public class Anh56Fachdaten  implements java.io.Serializable {
     }
 
     /* Custom code goes below here! */
-    public static Anh56Fachdaten findByObjektId(java.lang.Integer id){
-        List<Anh56Fachdaten> list = Anh56Fachdaten.getAll();
-        for(Anh56Fachdaten i : list){
-            if(i.getBasisObjekt().getId().equals(id)){
-                log.debug("Returning Anh56Fachdaten with BasisObjekt id: " + id);
-                return (Anh56Fachdaten) new DatabaseAccess().get(Anh56Fachdaten.class, i.getId());
-            }
-        }
-        log.debug("Found no Anh56Fachdaten with BasisObjekt id: " + id);
-        return null;
-    }
 
+    public static Anh56Fachdaten findByAnfallstelleId(java.lang.Integer id){
+        log.debug("Getting Anh56Fachdaten instance with connected Anfallstelle with id: " + id);
+        Anfallstelle anfallstelle = (Anfallstelle) HibernateSessionFactory.currentSession().createQuery("from Anfallstelle where id= " + id).list().get(0);
+        Set<Anh56Fachdaten> list = anfallstelle.getAnh56Fachdatens();
+        return list.iterator().next();
+    }
 }

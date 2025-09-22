@@ -59,6 +59,7 @@ import javax.swing.ListSelectionModel;
 import javax.swing.table.TableColumn;
 
 import com.jgoodies.forms.builder.DefaultFormBuilder;
+import com.jgoodies.forms.factories.Paddings;
 import com.jgoodies.forms.layout.CellConstraints;
 import com.jgoodies.forms.layout.FormLayout;
 
@@ -66,7 +67,7 @@ import de.bielefeld.umweltamt.aui.AbstractModul;
 import de.bielefeld.umweltamt.aui.GUIManager;
 import de.bielefeld.umweltamt.aui.HauptFrame;
 import de.bielefeld.umweltamt.aui.mappings.DatabaseQuery;
-import de.bielefeld.umweltamt.aui.mappings.atl.AtlKlaeranlagen;
+import de.bielefeld.umweltamt.aui.mappings.atl.Klaeranlage;
 import de.bielefeld.umweltamt.aui.module.common.tablemodels.EditorKlaeranlageModel;
 import de.bielefeld.umweltamt.aui.utils.AuikLogger;
 import de.bielefeld.umweltamt.aui.utils.SwingWorkerVariant;
@@ -88,12 +89,12 @@ public class EditorKlaeranlagen extends AbstractModul {
 
     /** Das TableModel für die Ergebnis-Tabelle */
     private EditorKlaeranlageModel tmodel;
-    
+
     private Action resultLoeschAction;
     private JPopupMenu resultPopup;
 
-	
-	
+
+
     @Override
     public Icon getIcon() {
         return super.getIcon("edit32.png");
@@ -141,7 +142,7 @@ public class EditorKlaeranlagen extends AbstractModul {
                         @Override
                         protected void doNonUILogic() {
                             ((EditorKlaeranlageModel)getTableModel()).setList(
-                                DatabaseQuery.getKlaeranlagenlist());
+                                DatabaseQuery.getKlaeranlagelist());
                         }
 
                         @Override
@@ -157,18 +158,18 @@ public class EditorKlaeranlagen extends AbstractModul {
             // Noch etwas Layout...
             FormLayout layout = new FormLayout("pref, 4dlu, pref:grow", "pref, 3dlu, f:150dlu:grow");
             DefaultFormBuilder builder = new DefaultFormBuilder(layout);
-            
-            builder.setDefaultDialogBorder();
+
             CellConstraints cc = new CellConstraints();
 
             builder.add(submitButton, cc.xy(1, 1));
             builder.add(getTableScroller(), cc.xyw(1, 3, 3));
 
             panel = builder.getPanel();
+            panel.setBorder(Paddings.DIALOG);
         }
 
         return panel;
-        
+
     }
 
     /* (non-Javadoc)
@@ -214,7 +215,7 @@ public class EditorKlaeranlagen extends AbstractModul {
 					column.setPreferredWidth(200);
 				}
 			}
-			
+
             resultTable.getInputMap().put(
                 (KeyStroke) getResultLoeschAction().getValue(
                     Action.ACCELERATOR_KEY),
@@ -257,11 +258,11 @@ public class EditorKlaeranlagen extends AbstractModul {
 	        JMenuItem loeschItem = new JMenuItem(getResultLoeschAction());
 	        this.resultPopup.add(loeschItem);
 	    }
-	
+
 	    if (e.isPopupTrigger()) {
 	        Point origin = e.getPoint();
 	        int row = this.resultTable.rowAtPoint(origin);
-	
+
 	        if (row != -1) {
 	            this.resultTable.setRowSelectionInterval(row, row);
 	            this.resultPopup.show(e.getComponent(), e.getX(), e.getY());
@@ -279,7 +280,7 @@ public class EditorKlaeranlagen extends AbstractModul {
                 public void actionPerformed(ActionEvent e) {
                     int row = getResultTable().getSelectedRow();
                     if (row != -1 && getResultTable().getEditingRow() == -1) {
-                    	AtlKlaeranlagen ka = EditorKlaeranlagen.this.tmodel
+                    	Klaeranlage ka = EditorKlaeranlagen.this.tmodel
                             .getRow(row);
 
                         if (GUIManager.getInstance().showQuestion(

@@ -35,6 +35,7 @@ import javax.swing.AbstractAction;
 import javax.swing.Action;
 import javax.swing.JButton;
 import javax.swing.JCheckBox;
+import javax.swing.JComponent;
 import javax.swing.JFormattedTextField;
 import javax.swing.JMenuItem;
 import javax.swing.JPanel;
@@ -45,17 +46,17 @@ import javax.swing.KeyStroke;
 import javax.swing.ScrollPaneConstants;
 
 import com.jgoodies.forms.builder.DefaultFormBuilder;
-import com.jgoodies.forms.factories.ButtonBarFactory;
 import com.jgoodies.forms.layout.FormLayout;
 
 import de.bielefeld.umweltamt.aui.GUIManager;
 import de.bielefeld.umweltamt.aui.HauptFrame;
-import de.bielefeld.umweltamt.aui.mappings.basis.BasisObjektverknuepfung;
-import de.bielefeld.umweltamt.aui.mappings.indeinl.AnhSuevFachdaten;
+import de.bielefeld.umweltamt.aui.mappings.basis.Objektverknuepfung;
+import de.bielefeld.umweltamt.aui.mappings.indeinl.SuevFachdaten;
 import de.bielefeld.umweltamt.aui.module.BasisObjektBearbeiten;
 import de.bielefeld.umweltamt.aui.module.common.ObjektChooser;
 import de.bielefeld.umweltamt.aui.module.common.tablemodels.ObjektVerknuepfungModel;
 import de.bielefeld.umweltamt.aui.utils.AuikLogger;
+import de.bielefeld.umweltamt.aui.utils.ComponentFactory;
 import de.bielefeld.umweltamt.aui.utils.IntegerField;
 import de.bielefeld.umweltamt.aui.utils.TextFieldDateChooser;
 
@@ -63,7 +64,7 @@ import de.bielefeld.umweltamt.aui.utils.TextFieldDateChooser;
  * Das "Zahnarzt"-Tab des BasisObjektBearbeiten-Moduls
  * @author Gerd Genuit
  */
-public class SuevPanel extends JPanel {
+public class SuevPanel extends ObjectPanel {
     private static final long serialVersionUID = -6379153046356849276L;
 
     /** Logging */
@@ -95,7 +96,7 @@ public class SuevPanel extends JPanel {
     private JPopupMenu verknuepfungPopup;
 
     // Daten
-    private AnhSuevFachdaten fachdaten = null;
+    private SuevFachdaten fachdaten = null;
 
     public SuevPanel(BasisObjektBearbeiten hauptModul) {
         this.name = "SüwVO-Abw-Teil1";
@@ -106,8 +107,6 @@ public class SuevPanel extends JPanel {
             "");
 
         DefaultFormBuilder builder = new DefaultFormBuilder(layout, this);
-        builder.setDefaultDialogBorder();
-
         builder.appendSeparator("Fachdaten");
         builder.append("Datum Anschreiben:", getDatAnschreibenDatum());
         builder.append("", getSanierungskonzeptCheck());
@@ -139,15 +138,21 @@ public class SuevPanel extends JPanel {
         builder.append(objektverknuepfungScroller, 7);
         builder.nextLine();
 
-        JPanel buttonBar = ButtonBarFactory.buildRightAlignedBar(
+        JComponent buttonBar = ComponentFactory.buildRightAlignedBar(
             getSelectObjektButton(), getSaveSuevButton());
 
-        // JPanel buttonBar = ButtonBarFactory.buildOKBar(getSaveSuevButton());
+        // JPanel buttonBar = ComponentFactory.buildOKBar(getSaveSuevButton());
         builder.append(buttonBar, 7);
+        addChangeListeners(getVersFlaecheFeld(), getDatAnschreibenDatum(),
+            getDatAnzeige58Datum(), getDirektrwCheck(), getDirektswCheck(),
+            getGroesser3haCheck(), getIndirektrwCheck(), getKeineAngabenCheck(),
+            getSanierungErfolgtCheck(), getSanierungskonzeptCheck(),
+            getSuevkanPflichtCheck());
+
     }
 
     public void fetchFormData() throws RuntimeException {
-        this.fachdaten = AnhSuevFachdaten.findByObjektId(
+        this.fachdaten = SuevFachdaten.findByObjektId(
             this.hauptModul.getObjekt().getId());
         log.debug("SuevKan-Verfahren aus DB geholt: " + this.fachdaten);
     }
@@ -225,7 +230,7 @@ public class SuevPanel extends JPanel {
             }
             this.objektVerknuepfungModel.setObjekt(this.hauptModul.getObjekt());
         }
-
+        setDirty(false);
     }
 
     public void clearForm() {
@@ -252,7 +257,7 @@ public class SuevPanel extends JPanel {
         return this.name;
     }
 
-    private boolean saveSuevDaten() {
+    protected boolean doSavePanelData() {
         boolean success;
 
         Integer versfl = ((IntegerField) this.versFlaecheFeld).getIntValue();
@@ -332,12 +337,12 @@ public class SuevPanel extends JPanel {
     public void completeObjekt() {
         if (this.hauptModul.isNew() || this.fachdaten == null) {
             // Neues SuevKan Verfahren erzeugen
-            this.fachdaten = new AnhSuevFachdaten();
+            this.fachdaten = new SuevFachdaten();
             // Objekt_Id setzen
-            this.fachdaten.setBasisObjekt(this.hauptModul.getObjekt());
+            this.fachdaten.setObjekt(this.hauptModul.getObjekt());
 
             // SuevKan speichern
-            AnhSuevFachdaten.merge(this.fachdaten);
+            SuevFachdaten.merge(this.fachdaten);
             log.debug("Neues SuevKan Verfahren " + this.fachdaten
                 + " gespeichert.");
         }
@@ -435,7 +440,7 @@ public class SuevPanel extends JPanel {
                 @Override
                 public void actionPerformed(ActionEvent e) {
                     enableAll(false);
-                    if (saveSuevDaten()) {
+                    if (hauptModul.saveAllTabs()) {
                         SuevPanel.this.hauptModul.getFrame().changeStatus(
                             "SuevKan Verfahren "
                                 + SuevPanel.this.fachdaten.getId()
@@ -484,9 +489,9 @@ public class SuevPanel extends JPanel {
                                 origin);
 
                             if (row != -1) {
-                                BasisObjektverknuepfung obj = SuevPanel.this.objektVerknuepfungModel
+                                Objektverknuepfung obj = SuevPanel.this.objektVerknuepfungModel
                                     .getRow(row);
-                                if (obj.getBasisObjektByIstVerknuepftMit()
+                                if (obj.getObjektByIstVerknuepftMit()
                                     .getId().intValue() != SuevPanel.this.hauptModul
                                     .getObjekt().getId().intValue()) {
                                     SuevPanel.this.hauptModul
@@ -494,7 +499,7 @@ public class SuevPanel extends JPanel {
                                         .getSettingsManager()
                                         .setSetting(
                                             "auik.imc.edit_object",
-                                            obj.getBasisObjektByIstVerknuepftMit()
+                                            obj.getObjektByIstVerknuepftMit()
                                                 .getId().intValue(),
                                             false);
                                 } else {
@@ -503,7 +508,7 @@ public class SuevPanel extends JPanel {
                                         .getSettingsManager()
                                         .setSetting(
                                             "auik.imc.edit_object",
-                                            obj.getBasisObjektByObjekt()
+                                            obj.getObjektByObjekt()
                                                 .getId().intValue(),
                                             false);
                                 }
@@ -567,7 +572,7 @@ public class SuevPanel extends JPanel {
                     int row = getObjektverknuepungTabelle().getSelectedRow();
                     if (row != -1
                         && getObjektverknuepungTabelle().getEditingRow() == -1) {
-                        BasisObjektverknuepfung verknuepfung = SuevPanel.this.objektVerknuepfungModel
+                        Objektverknuepfung verknuepfung = SuevPanel.this.objektVerknuepfungModel
                             .getRow(row);
                         if (GUIManager.getInstance().showQuestion(
                             "Soll die Verknüpfung wirklich gelöscht werden?\n"
@@ -610,7 +615,7 @@ public class SuevPanel extends JPanel {
                 public void actionPerformed(ActionEvent e) {
                     ObjektChooser chooser = new ObjektChooser(
                         SuevPanel.this.hauptModul.getFrame(),
-                        SuevPanel.this.fachdaten.getBasisObjekt(),
+                        SuevPanel.this.fachdaten.getObjekt(),
                         SuevPanel.this.objektVerknuepfungModel);
                     chooser.setVisible(true);
                 }

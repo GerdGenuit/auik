@@ -55,29 +55,43 @@ package de.bielefeld.umweltamt.aui.module.common;
 import java.awt.Component;
 import java.awt.Point;
 import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.awt.event.InputEvent;
 import java.awt.event.KeyEvent;
 import java.awt.event.MouseEvent;
+import java.io.File;
 import java.lang.reflect.Method;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 
 import javax.swing.AbstractAction;
 import javax.swing.Action;
+import javax.swing.JButton;
+import javax.swing.JDialog;
+import javax.swing.JFileChooser;
+import javax.swing.JLabel;
 import javax.swing.JMenuItem;
 import javax.swing.JPanel;
 import javax.swing.JPopupMenu;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
+import javax.swing.JTextArea;
 import javax.swing.KeyStroke;
 import javax.swing.table.DefaultTableCellRenderer;
 
 import com.jgoodies.forms.builder.PanelBuilder;
+import com.jgoodies.forms.factories.Paddings;
 import com.jgoodies.forms.layout.CellConstraints;
 import com.jgoodies.forms.layout.FormLayout;
 
 import de.bielefeld.umweltamt.aui.AbstractModul;
-import de.bielefeld.umweltamt.aui.mappings.basis.BasisObjekt;
+import de.bielefeld.umweltamt.aui.GUIManager;
+import de.bielefeld.umweltamt.aui.mappings.basis.Objekt;
+import de.bielefeld.umweltamt.aui.mappings.elka.Anfallstelle;
+import de.bielefeld.umweltamt.aui.mappings.indeinl.Anh49Fachdaten;
+import de.bielefeld.umweltamt.aui.mappings.indeinl.Anh50Fachdaten;
+import de.bielefeld.umweltamt.aui.mappings.indeinl.Anh56Fachdaten;
+import de.bielefeld.umweltamt.aui.mappings.indeinl.BwkFachdaten;
 import de.bielefeld.umweltamt.aui.utils.AuikUtils;
 import de.bielefeld.umweltamt.aui.utils.tablemodelbase.ListTableModel;
 
@@ -96,6 +110,7 @@ public abstract class AbstractQueryModul extends AbstractModul {
     private JPopupMenu resultPopup;
 //    private RowSorter<?> sorter;
 
+private String outputPath = "./auswertungen/auik-export.csv";
 
 
     /**
@@ -121,13 +136,13 @@ public abstract class AbstractQueryModul extends AbstractModul {
                     "pref, 3dlu, f:150dlu:grow"
             );
             PanelBuilder builder = new PanelBuilder(layout);
-            builder.setDefaultDialogBorder();
             CellConstraints cc = new CellConstraints();
 
             builder.add(getQueryOptionsPanel(),    cc.xy(1,1));
             builder.add(getTableScroller(),        cc.xy(1,3));
 
             panel = builder.getPanel();
+            panel.setBorder(Paddings.DIALOG);
         }
 
         return panel;
@@ -148,8 +163,8 @@ public abstract class AbstractQueryModul extends AbstractModul {
      * @param objectAtRow Das Fachdaten-Objekt.
      * @return Das zugehörige BasisObjekt (oder <code>null</code>, falls keins existiert).
      */
-    protected BasisObjekt getBasisObjektFromFachdaten(Object fachdaten) {
-        BasisObjekt tmp = null;
+    protected Objekt getBasisObjektFromFachdaten(Object fachdaten) {
+        Objekt tmp = null;
 
         // Die "getBasisObjekt" Methode des jeweiligen
         // Fachdaten-Objekts wird jetzt, unabhängig von
@@ -157,11 +172,19 @@ public abstract class AbstractQueryModul extends AbstractModul {
         // nach ihrem Namen gesucht. Sollte keine Methode
         // diesen Namens existieren, wird null zurück geliefert.
 		try {
-			if (fachdaten instanceof BasisObjekt) {
-				tmp = (BasisObjekt) fachdaten;
+			if (fachdaten instanceof Objekt) {
+				tmp = (Objekt) fachdaten;
+			} else if (fachdaten instanceof BwkFachdaten){
+				tmp = ((BwkFachdaten) fachdaten).getAnfallstelle().getObjekt();
+			} else if (fachdaten instanceof Anh49Fachdaten){
+				tmp = ((Anh49Fachdaten) fachdaten).getAnfallstelle().getObjekt();
+			} else if (fachdaten instanceof Anh50Fachdaten){
+				tmp = ((Anh50Fachdaten) fachdaten).getAnfallstelle().getObjekt();
+			} else if (fachdaten instanceof Anh56Fachdaten){
+				tmp = ((Anh56Fachdaten) fachdaten).getAnfallstelle().getObjekt();
 			} else {
-				Method getBO = fachdaten.getClass().getMethod("getBasisObjekt");
-				tmp = (BasisObjekt) getBO.invoke(fachdaten);
+				Method getBO = fachdaten.getClass().getMethod("getObjekt");
+				tmp = (Objekt) getBO.invoke(fachdaten);
 			}
         } catch (Exception e) {
             //e.printStackTrace();
@@ -206,7 +229,7 @@ public abstract class AbstractQueryModul extends AbstractModul {
     /**
      * @return Eine Tabelle für die Ergebnisse der Abfrage.
      */
-    protected JTable getResultTable() {
+    public JTable getResultTable() {
         if (resultTable == null) {
             resultTable = new JTable(getTableModel());
             resultTable.setAutoCreateRowSorter(true);
@@ -324,7 +347,7 @@ public abstract class AbstractQueryModul extends AbstractModul {
     protected void editObject(int row) {
 
         if (row != -1) {
-            BasisObjekt obj = getBasisObjektFromFachdaten(getTableModel().getObjectAtRow(row));
+            Objekt obj = getBasisObjektFromFachdaten(getTableModel().getObjectAtRow(row));
 
             if (obj != null) {
 //                AUIKataster.debugOutput("Bearbeite BO: " + obj, "AQM");
@@ -333,5 +356,79 @@ public abstract class AbstractQueryModul extends AbstractModul {
             }
 
         }
+    }
+
+    protected JButton createExportButton() {
+        JButton exportButton = new JButton("Tabelle speichern");;
+        exportButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent arg0) {
+                JDialog dialog = createExportDialog();
+                dialog.setVisible(true);
+            }
+        });
+        return exportButton;
+    }
+
+    @SuppressWarnings("deprecation" )
+    private JDialog createExportDialog() {
+        JDialog dialog = new JDialog();
+        dialog.setTitle("Auswertung exportieren");
+        dialog.setModal(true);
+        dialog.setSize(600, 150);
+
+
+        JLabel pathLabel = new JLabel("Dateipfad:");
+        JTextArea path = new JTextArea(this.outputPath);
+        JButton pathButton = new JButton("Pfad wählen");
+        pathButton.addActionListener(new java.awt.event.ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent arg0) {
+                JFileChooser f = new JFileChooser();
+                f.setFileSelectionMode(JFileChooser.FILES_ONLY);
+                f.showSaveDialog(null);
+                path.setText(f.getSelectedFile().getAbsolutePath());
+            }
+        });
+
+        JButton okButton = new JButton("OK");
+        okButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent arg0) {
+                if (!AuikUtils.exportTableDataToCVS(
+                        getResultTable(),
+                        new File(path.getText()))) {
+                    GUIManager.getInstance().showErrorMessage(
+                        "Der Export war nicht erfolgreich",
+                        "Export-Fehler");
+                } else {
+                    dialog.setVisible(false);
+                }
+            }
+        });
+        JButton cancelButton = new JButton("Abbrechen");
+        cancelButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent arg0) {
+                dialog.setVisible(false);
+            }
+        });
+
+
+        FormLayout layout = new FormLayout(
+            "5dlu, 100dlu, 75dlu:g, 25dlu, 5dlu, 25dlu, 3dlu, 25dlu, 5dlu",
+            "5dlu, 35dlu, 3dlu:g, 35dlu, 5dlu");
+        PanelBuilder builder = new PanelBuilder(layout);
+        CellConstraints cc = new CellConstraints();
+        builder.add(pathLabel, cc.xy(2, 2));
+        builder.add(path, cc.xyw(3, 2, 2));
+        builder.add(pathButton, cc.xyw(6, 2, 3));
+        builder.add(cancelButton, cc.xyw(4, 4, 3));
+        builder.add(okButton, cc.xy(8, 4));
+
+        JPanel dialogContent = builder.build();
+        dialog.add(dialogContent);
+
+        return dialog;
     }
 }

@@ -61,6 +61,7 @@ import javax.swing.table.TableColumn;
 import org.hibernate.criterion.MatchMode;
 
 import com.jgoodies.forms.builder.DefaultFormBuilder;
+import com.jgoodies.forms.factories.Paddings;
 import com.jgoodies.forms.layout.CellConstraints;
 import com.jgoodies.forms.layout.FormLayout;
 
@@ -68,9 +69,7 @@ import de.bielefeld.umweltamt.aui.AbstractModul;
 import de.bielefeld.umweltamt.aui.GUIManager;
 import de.bielefeld.umweltamt.aui.HauptFrame;
 import de.bielefeld.umweltamt.aui.mappings.DatabaseQuery;
-import de.bielefeld.umweltamt.aui.mappings.basis.BasisStrassen;
-import de.bielefeld.umweltamt.aui.mappings.basis.BasisTabStreets;
-import de.bielefeld.umweltamt.aui.module.common.tablemodels.EditorStrassenModel;
+import de.bielefeld.umweltamt.aui.mappings.basis.TabStreets;
 import de.bielefeld.umweltamt.aui.module.common.tablemodels.EditorTabStreetsModel;
 import de.bielefeld.umweltamt.aui.utils.AuikLogger;
 import de.bielefeld.umweltamt.aui.utils.SwingWorkerVariant;
@@ -78,7 +77,7 @@ import de.bielefeld.umweltamt.aui.utils.tablemodelbase.ListTableModel;
 
 /**
  * Das Modul um die Straßentabelle zu bearbeiten.
- * 
+ *
  * @author Gerd Genuit
  */
 public class EditorTabStreets extends AbstractModul
@@ -106,7 +105,7 @@ public class EditorTabStreets extends AbstractModul
 
 	/*
 	 * (non-Javadoc)
-	 * 
+	 *
 	 * @see de.bielefeld.umweltamt.aui.Modul#getName()
 	 */
 	@Override
@@ -117,7 +116,7 @@ public class EditorTabStreets extends AbstractModul
 
 	/*
 	 * (non-Javadoc)
-	 * 
+	 *
 	 * @see de.bielefeld.umweltamt.aui.Modul#getIdentifier()
 	 */
 	@Override
@@ -128,7 +127,7 @@ public class EditorTabStreets extends AbstractModul
 
 	/*
 	 * (non-Javadoc)
-	 * 
+	 *
 	 * @see de.bielefeld.umweltamt.aui.Modul#getCategory()
 	 */
 	@Override
@@ -139,7 +138,7 @@ public class EditorTabStreets extends AbstractModul
 
 	/*
 	 * (non-Javadoc)
-	 * 
+	 *
 	 * @see de.bielefeld.umweltamt.aui.Modul#getPanel()
 	 */
 	@Override
@@ -181,13 +180,13 @@ public class EditorTabStreets extends AbstractModul
 			FormLayout layout = new FormLayout("pref, 4dlu, pref:grow", "pref, 3dlu, f:150dlu:grow");
 			DefaultFormBuilder builder = new DefaultFormBuilder(layout);
 
-			builder.setDefaultDialogBorder();
 			CellConstraints cc = new CellConstraints();
 
 			builder.add(submitButton, cc.xy(1, 1));
 			builder.add(getTableScroller(), cc.xyw(1, 3, 3));
 
 			panel = builder.getPanel();
+			panel.setBorder(Paddings.DIALOG);
 		}
 
 		return panel;
@@ -196,7 +195,7 @@ public class EditorTabStreets extends AbstractModul
 
 	/*
 	 * (non-Javadoc)
-	 * 
+	 *
 	 * @see
 	 * de.bielefeld.umweltamt.aui.module.common.AbstractQueryModul#getTableModel
 	 * ()
@@ -245,7 +244,7 @@ public class EditorTabStreets extends AbstractModul
 					column.setPreferredWidth(200);
 				}
 			}
-			
+
 			resultTable.getInputMap().put(
 											(KeyStroke) getResultLoeschAction().getValue(
 																							Action.ACCELERATOR_KEY),
@@ -322,7 +321,7 @@ public class EditorTabStreets extends AbstractModul
 					int row = getResultTable().getSelectedRow();
 					if (row != -1 && getResultTable().getEditingRow() == -1)
 					{
-						BasisTabStreets strasse = EditorTabStreets.this.tmodel
+						TabStreets strasse = EditorTabStreets.this.tmodel
 								.getRow(row);
 
 						if (GUIManager.getInstance().showQuestion(

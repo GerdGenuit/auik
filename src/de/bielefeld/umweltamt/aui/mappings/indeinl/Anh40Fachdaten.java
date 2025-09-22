@@ -23,14 +23,17 @@
 
 package de.bielefeld.umweltamt.aui.mappings.indeinl;
 
+import de.bielefeld.umweltamt.aui.HibernateSessionFactory;
 import de.bielefeld.umweltamt.aui.mappings.DatabaseAccess;
 import de.bielefeld.umweltamt.aui.mappings.DatabaseClassToString;
 import de.bielefeld.umweltamt.aui.mappings.DatabaseQuery;
 import de.bielefeld.umweltamt.aui.mappings.DatabaseSerialVersionUID;
-import de.bielefeld.umweltamt.aui.mappings.basis.BasisObjekt;
+import de.bielefeld.umweltamt.aui.mappings.basis.Objekt;
+import de.bielefeld.umweltamt.aui.mappings.elka.Anfallstelle;
 import de.bielefeld.umweltamt.aui.utils.AuikLogger;
 import java.util.Date;
 import java.util.List;
+import java.util.Set;
 
 /**
  * A class that represents a row in the Anh40Fachdaten database table.<br>
@@ -42,10 +45,10 @@ public class Anh40Fachdaten  implements java.io.Serializable {
     /** Generated serialVersionUID for Serializable interface */
     private static final long serialVersionUID =
         DatabaseSerialVersionUID.forAnh40Fachdaten;
-    
+
     /* Primary key, foreign keys (relations) and table columns */
     private Integer id;
-    private BasisObjekt basisObjekt;
+    private Anfallstelle anfallstelle;
     private String bemerkungen;
     private String ansprechpartner;
     private String sachbearbeiterrav;
@@ -75,18 +78,18 @@ public class Anh40Fachdaten  implements java.io.Serializable {
 
     /** Minimal constructor */
     public Anh40Fachdaten(
-        Integer id, BasisObjekt basisObjekt, boolean enabled, boolean deleted) {
+        Integer id, Anfallstelle anfallstelle, boolean enabled, boolean deleted) {
         this.id = id;
-        this.basisObjekt = basisObjekt;
+        this.anfallstelle = anfallstelle;
         this.enabled = enabled;
         this.deleted = deleted;
     }
 
     /** Full constructor */
     public Anh40Fachdaten(
-        Integer id, BasisObjekt basisObjekt, String bemerkungen, String ansprechpartner, String sachbearbeiterrav, String sachbearbeiterheepen, String klaeranlage, String herkunftsbereich, Boolean wsg, Short prioritaet, Boolean genehmigungspflicht, Boolean nachtrag, Boolean bimsch, Integer abwmengegenehmigt, Integer abwmengeprodspez, Integer abwmengegesamt, Date gen58, Date gen59, boolean enabled, boolean deleted) {
+        Integer id, Anfallstelle anfallstelle, String bemerkungen, String ansprechpartner, String sachbearbeiterrav, String sachbearbeiterheepen, String klaeranlage, String herkunftsbereich, Boolean wsg, Short prioritaet, Boolean genehmigungspflicht, Boolean nachtrag, Boolean bimsch, Integer abwmengegenehmigt, Integer abwmengeprodspez, Integer abwmengegesamt, Date gen58, Date gen59, boolean enabled, boolean deleted) {
         this.id = id;
-        this.basisObjekt = basisObjekt;
+        this.anfallstelle = anfallstelle;
         this.bemerkungen = bemerkungen;
         this.ansprechpartner = ansprechpartner;
         this.sachbearbeiterrav = sachbearbeiterrav;
@@ -116,12 +119,12 @@ public class Anh40Fachdaten  implements java.io.Serializable {
         this.id = id;
     }
 
-    public BasisObjekt getBasisObjekt() {
-        return this.basisObjekt;
+    public Anfallstelle getAnfallstelle() {
+        return this.anfallstelle;
     }
 
-    public void setBasisObjekt(BasisObjekt basisObjekt) {
-        this.basisObjekt = basisObjekt;
+    public void setAnfallstelle(Anfallstelle anfallstelle) {
+        this.anfallstelle = anfallstelle;
     }
 
     public String getBemerkungen() {
@@ -277,7 +280,7 @@ public class Anh40Fachdaten  implements java.io.Serializable {
      */
     @Override
     public String toString() {
-        return DatabaseClassToString.toStringForClass(this); 
+        return DatabaseClassToString.toStringForClass(this);
     }
 
     /**
@@ -286,28 +289,28 @@ public class Anh40Fachdaten  implements java.io.Serializable {
      */
     public String toDebugString() {
         StringBuffer buffer = new StringBuffer();
-        
+
         buffer.append(getClass().getSimpleName()).append("@").append(Integer.toHexString(hashCode())).append(" [");
-        buffer.append("id").append("='").append(getId()).append("' ");			
-        buffer.append("basisObjekt").append("='").append(getBasisObjekt()).append("' ");			
-        buffer.append("bemerkungen").append("='").append(getBemerkungen()).append("' ");			
-        buffer.append("ansprechpartner").append("='").append(getAnsprechpartner()).append("' ");			
-        buffer.append("sachbearbeiterrav").append("='").append(getSachbearbeiterrav()).append("' ");			
-        buffer.append("sachbearbeiterheepen").append("='").append(getSachbearbeiterheepen()).append("' ");			
-        buffer.append("klaeranlage").append("='").append(getKlaeranlage()).append("' ");			
-        buffer.append("herkunftsbereich").append("='").append(getHerkunftsbereich()).append("' ");			
-        buffer.append("wsg").append("='").append(getWsg()).append("' ");			
-        buffer.append("prioritaet").append("='").append(getPrioritaet()).append("' ");			
-        buffer.append("genehmigungspflicht").append("='").append(getGenehmigungspflicht()).append("' ");			
-        buffer.append("nachtrag").append("='").append(getNachtrag()).append("' ");			
-        buffer.append("bimsch").append("='").append(getBimsch()).append("' ");			
-        buffer.append("abwmengegenehmigt").append("='").append(getAbwmengegenehmigt()).append("' ");			
-        buffer.append("abwmengeprodspez").append("='").append(getAbwmengeprodspez()).append("' ");			
-        buffer.append("abwmengegesamt").append("='").append(getAbwmengegesamt()).append("' ");			
-        buffer.append("gen58").append("='").append(getGen58()).append("' ");			
-        buffer.append("gen59").append("='").append(getGen59()).append("' ");			
-        buffer.append("enabled").append("='").append(isEnabled()).append("' ");			
-        buffer.append("deleted").append("='").append(isDeleted()).append("' ");			
+        buffer.append("id").append("='").append(getId()).append("' ");
+        buffer.append("objekt").append("='").append(getAnfallstelle()).append("' ");
+        buffer.append("bemerkungen").append("='").append(getBemerkungen()).append("' ");
+        buffer.append("ansprechpartner").append("='").append(getAnsprechpartner()).append("' ");
+        buffer.append("sachbearbeiterrav").append("='").append(getSachbearbeiterrav()).append("' ");
+        buffer.append("sachbearbeiterheepen").append("='").append(getSachbearbeiterheepen()).append("' ");
+        buffer.append("klaeranlage").append("='").append(getKlaeranlage()).append("' ");
+        buffer.append("herkunftsbereich").append("='").append(getHerkunftsbereich()).append("' ");
+        buffer.append("wsg").append("='").append(getWsg()).append("' ");
+        buffer.append("prioritaet").append("='").append(getPrioritaet()).append("' ");
+        buffer.append("genehmigungspflicht").append("='").append(getGenehmigungspflicht()).append("' ");
+        buffer.append("nachtrag").append("='").append(getNachtrag()).append("' ");
+        buffer.append("bimsch").append("='").append(getBimsch()).append("' ");
+        buffer.append("abwmengegenehmigt").append("='").append(getAbwmengegenehmigt()).append("' ");
+        buffer.append("abwmengeprodspez").append("='").append(getAbwmengeprodspez()).append("' ");
+        buffer.append("abwmengegesamt").append("='").append(getAbwmengegesamt()).append("' ");
+        buffer.append("gen58").append("='").append(getGen58()).append("' ");
+        buffer.append("gen59").append("='").append(getGen59()).append("' ");
+        buffer.append("enabled").append("='").append(isEnabled()).append("' ");
+        buffer.append("deleted").append("='").append(isDeleted()).append("' ");
         buffer.append("]");
 
         return buffer.toString();
@@ -339,7 +342,7 @@ public class Anh40Fachdaten  implements java.io.Serializable {
         result = result * 37 + idValue;
         return result;
     }
-    
+
     /**
      * Merge (save or update) a detached instance
      * @param detachedInstance the instance to merge
@@ -373,27 +376,27 @@ public class Anh40Fachdaten  implements java.io.Serializable {
      * @param copy Anh40Fachdaten
      */
     private void copy(Anh40Fachdaten copy) {
-        this.id = copy.getId();            
-        this.basisObjekt = copy.getBasisObjekt();            
-        this.bemerkungen = copy.getBemerkungen();            
-        this.ansprechpartner = copy.getAnsprechpartner();            
-        this.sachbearbeiterrav = copy.getSachbearbeiterrav();            
-        this.sachbearbeiterheepen = copy.getSachbearbeiterheepen();            
-        this.klaeranlage = copy.getKlaeranlage();            
-        this.herkunftsbereich = copy.getHerkunftsbereich();            
-        this.wsg = copy.getWsg();            
-        this.prioritaet = copy.getPrioritaet();            
-        this.genehmigungspflicht = copy.getGenehmigungspflicht();            
-        this.nachtrag = copy.getNachtrag();            
-        this.bimsch = copy.getBimsch();            
-        this.abwmengegenehmigt = copy.getAbwmengegenehmigt();            
-        this.abwmengeprodspez = copy.getAbwmengeprodspez();            
-        this.abwmengegesamt = copy.getAbwmengegesamt();            
-        this.gen58 = copy.getGen58();            
-        this.gen59 = copy.getGen59();            
-        this.enabled = copy.isEnabled();            
-        this.deleted = copy.isDeleted();            
-    }    
+        this.id = copy.getId();
+        this.anfallstelle = copy.getAnfallstelle();
+        this.bemerkungen = copy.getBemerkungen();
+        this.ansprechpartner = copy.getAnsprechpartner();
+        this.sachbearbeiterrav = copy.getSachbearbeiterrav();
+        this.sachbearbeiterheepen = copy.getSachbearbeiterheepen();
+        this.klaeranlage = copy.getKlaeranlage();
+        this.herkunftsbereich = copy.getHerkunftsbereich();
+        this.wsg = copy.getWsg();
+        this.prioritaet = copy.getPrioritaet();
+        this.genehmigungspflicht = copy.getGenehmigungspflicht();
+        this.nachtrag = copy.getNachtrag();
+        this.bimsch = copy.getBimsch();
+        this.abwmengegenehmigt = copy.getAbwmengegenehmigt();
+        this.abwmengeprodspez = copy.getAbwmengeprodspez();
+        this.abwmengegesamt = copy.getAbwmengegesamt();
+        this.gen58 = copy.getGen58();
+        this.gen59 = copy.getGen59();
+        this.enabled = copy.isEnabled();
+        this.deleted = copy.isDeleted();
+    }
 
     /**
      * Delete (mark as deleted) a detached instance
@@ -438,14 +441,12 @@ public class Anh40Fachdaten  implements java.io.Serializable {
     }
 
     /* Custom code goes below here! */
-    public static Anh40Fachdaten findByObjektId(java.lang.Integer id){
-        log.debug("Getting Anh40Fachdaten instance with connected BasisObjekt with id " + id);
-        List<Anh40Fachdaten> all = Anh40Fachdaten.getAll();
-        for(Anh40Fachdaten i : all){
-            if(i.getBasisObjekt().getId().equals(id)){
-                return (Anh40Fachdaten) new DatabaseAccess().get(Anh40Fachdaten.class, i.getId());
-            }
-        }
-        return null;
+
+
+    public static Anh40Fachdaten findByAnfallstelleId(java.lang.Integer id){
+        log.debug("Getting Anh40Fachdaten instance with connected Anfallstelle with id: " + id);
+        Anfallstelle anfallstelle = (Anfallstelle) HibernateSessionFactory.currentSession().createQuery("from Anfallstelle where id= " + id).list().get(0);
+        Set<Anh40Fachdaten> list = anfallstelle.getAnh40Fachdatens();
+        return list.iterator().next();
     }
 }

@@ -28,13 +28,16 @@ import de.bielefeld.umweltamt.aui.mappings.DatabaseAccess;
 import de.bielefeld.umweltamt.aui.mappings.DatabaseClassToString;
 import de.bielefeld.umweltamt.aui.mappings.DatabaseQuery;
 import de.bielefeld.umweltamt.aui.mappings.DatabaseSerialVersionUID;
-import de.bielefeld.umweltamt.aui.mappings.basis.BasisObjekt;
+import de.bielefeld.umweltamt.aui.mappings.basis.Objekt;
+import de.bielefeld.umweltamt.aui.mappings.elka.Anfallstelle;
 import de.bielefeld.umweltamt.aui.utils.AuikLogger;
-
 import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+
+import org.hibernate.criterion.DetachedCriteria;
+import org.hibernate.criterion.Restrictions;
 
 /**
  * A class that represents a row in the Anh49Fachdaten database table.<br>
@@ -46,10 +49,10 @@ public class Anh49Fachdaten  implements java.io.Serializable {
     /** Generated serialVersionUID for Serializable interface */
     private static final long serialVersionUID =
         DatabaseSerialVersionUID.forAnh49Fachdaten;
-    
+
     /* Primary key, foreign keys (relations) and table columns */
     private Integer id;
-    private BasisObjekt basisObjekt;
+    private Anfallstelle anfallstelle;
     private String klaeranlage;
     private String name;
     private String bemerkungen;
@@ -89,14 +92,12 @@ public class Anh49Fachdaten  implements java.io.Serializable {
     private Date frist;
     private Integer durchgefuehrt;
     private Date dekraTuevDatum;
+    private Boolean sicherheitsabscheider;
     private boolean enabled;
     private boolean deleted;
-    private Set<Anh49Ortstermine> anh49Ortstermines = new HashSet<Anh49Ortstermine>(0);
-    private Set<Anh49Kontrollen> anh49Kontrollens = new HashSet<Anh49Kontrollen>(0);
-    private Set<Anh49Abscheiderdetails> anh49Abscheiderdetailses = new HashSet<Anh49Abscheiderdetails>(0);
-    private Set<Anh49Analysen> anh49Analysens = new HashSet<Anh49Analysen>(0);
     private Set<Anh49Abfuhr> anh49Abfuhrs = new HashSet<Anh49Abfuhr>(0);
-    private Set<Anh49Verwaltungsverf> anh49Verwaltungsverfs = new HashSet<Anh49Verwaltungsverf>(0);
+    private Set<Anh49Analysen> anh49Analysens = new HashSet<Anh49Analysen>(0);
+    private Set<Anh49Abscheiderdetails> anh49Abscheiderdetailses = new HashSet<Anh49Abscheiderdetails>(0);
 
     /** Logging */
     private static final AuikLogger log = AuikLogger.getLogger();
@@ -108,18 +109,18 @@ public class Anh49Fachdaten  implements java.io.Serializable {
 
     /** Minimal constructor */
     public Anh49Fachdaten(
-        Integer id, BasisObjekt basisObjekt, boolean enabled, boolean deleted) {
+        Integer id, Anfallstelle anfallstelle, boolean enabled, boolean deleted) {
         this.id = id;
-        this.basisObjekt = basisObjekt;
+        this.anfallstelle = anfallstelle;
         this.enabled = enabled;
         this.deleted = deleted;
     }
 
     /** Full constructor */
     public Anh49Fachdaten(
-        Integer id, BasisObjekt basisObjekt, String klaeranlage, String name, String bemerkungen, String planquadrat, Boolean abgemeldet, String technikAnh49, String technikAnh49Nr, String sachkundelfa, Boolean werkstatt, Boolean bodeneinlaeufe, Boolean waschanlagen, String sonstiges, String analysemonat, Boolean abwasserfrei, String anredeantragst, String nameantragst, String zusantragst, String strasseantragst, Integer hausnrantragst, String hausnrzusantragst, String plzantragst, String ortantragst, String sachbearbeiterIn, String ansprechpartnerIn, Date antragvom, Date genehmigung, Date wiedervorlage, Date aenderungsgenehmigung, Date letztesAnschreiben, String anschreiben, Boolean waschanlage, Boolean ESatzung, Date seitwann, String sonstigestechnik, Boolean maengel, Boolean behoben, Date frist, Integer durchgefuehrt, Date dekraTuevDatum, boolean enabled, boolean deleted, Set<Anh49Ortstermine> anh49Ortstermines, Set<Anh49Kontrollen> anh49Kontrollens, Set<Anh49Abscheiderdetails> anh49Abscheiderdetailses, Set<Anh49Analysen> anh49Analysens, Set<Anh49Abfuhr> anh49Abfuhrs, Set<Anh49Verwaltungsverf> anh49Verwaltungsverfs) {
+        Integer id, Anfallstelle anfallstelle, String klaeranlage, String name, String bemerkungen, String planquadrat, Boolean abgemeldet, String technikAnh49, String technikAnh49Nr, String sachkundelfa, Boolean werkstatt, Boolean bodeneinlaeufe, Boolean waschanlagen, String sonstiges, String analysemonat, Boolean abwasserfrei, String anredeantragst, String nameantragst, String zusantragst, String strasseantragst, Integer hausnrantragst, String hausnrzusantragst, String plzantragst, String ortantragst, String sachbearbeiterIn, String ansprechpartnerIn, Date antragvom, Date genehmigung, Date wiedervorlage, Date aenderungsgenehmigung, Date letztesAnschreiben, String anschreiben, Boolean waschanlage, Boolean ESatzung, Boolean sicherheitsabscheider, Date seitwann, String sonstigestechnik, Boolean maengel, Boolean behoben, Date frist, Integer durchgefuehrt, Date dekraTuevDatum, boolean enabled, boolean deleted, Set<Anh49Abfuhr> anh49Abfuhrs, Set<Anh49Analysen> anh49Analysens, Set<Anh49Abscheiderdetails> anh49Abscheiderdetailses) {
         this.id = id;
-        this.basisObjekt = basisObjekt;
+        this.anfallstelle = anfallstelle;
         this.klaeranlage = klaeranlage;
         this.name = name;
         this.bemerkungen = bemerkungen;
@@ -152,6 +153,7 @@ public class Anh49Fachdaten  implements java.io.Serializable {
         this.anschreiben = anschreiben;
         this.waschanlage = waschanlage;
         this.ESatzung = ESatzung;
+        this.sicherheitsabscheider = sicherheitsabscheider;
         this.seitwann = seitwann;
         this.sonstigestechnik = sonstigestechnik;
         this.maengel = maengel;
@@ -161,12 +163,9 @@ public class Anh49Fachdaten  implements java.io.Serializable {
         this.dekraTuevDatum = dekraTuevDatum;
         this.enabled = enabled;
         this.deleted = deleted;
-        this.anh49Ortstermines = anh49Ortstermines;
-        this.anh49Kontrollens = anh49Kontrollens;
-        this.anh49Abscheiderdetailses = anh49Abscheiderdetailses;
-        this.anh49Analysens = anh49Analysens;
         this.anh49Abfuhrs = anh49Abfuhrs;
-        this.anh49Verwaltungsverfs = anh49Verwaltungsverfs;
+        this.anh49Analysens = anh49Analysens;
+        this.anh49Abscheiderdetailses = anh49Abscheiderdetailses;
     }
 
     /* Setter and getter methods */
@@ -178,12 +177,12 @@ public class Anh49Fachdaten  implements java.io.Serializable {
         this.id = id;
     }
 
-    public BasisObjekt getBasisObjekt() {
-        return this.basisObjekt;
+    public Anfallstelle getAnfallstelle() {
+        return this.anfallstelle;
     }
 
-    public void setBasisObjekt(BasisObjekt basisObjekt) {
-        this.basisObjekt = basisObjekt;
+    public void setAnfallstelle(Anfallstelle anfallstelle) {
+        this.anfallstelle = anfallstelle;
     }
 
     public String getKlaeranlage() {
@@ -442,6 +441,14 @@ public class Anh49Fachdaten  implements java.io.Serializable {
         this.ESatzung = ESatzung;
     }
 
+    public Boolean getSicherheitsabscheider() {
+        return this.sicherheitsabscheider;
+    }
+
+    public void setSicherheitsabscheider(Boolean sicherheitsabscheider) {
+        this.sicherheitsabscheider = sicherheitsabscheider;
+    }
+
     public Date getSeitwann() {
         return this.seitwann;
     }
@@ -514,28 +521,12 @@ public class Anh49Fachdaten  implements java.io.Serializable {
         this.deleted = deleted;
     }
 
-    public Set<Anh49Ortstermine> getAnh49Ortstermines() {
-        return this.anh49Ortstermines;
+    public Set<Anh49Abfuhr> getAnh49Abfuhrs() {
+        return this.anh49Abfuhrs;
     }
 
-    public void setAnh49Ortstermines(Set<Anh49Ortstermine> anh49Ortstermines) {
-        this.anh49Ortstermines = anh49Ortstermines;
-    }
-
-    public Set<Anh49Kontrollen> getAnh49Kontrollens() {
-        return this.anh49Kontrollens;
-    }
-
-    public void setAnh49Kontrollens(Set<Anh49Kontrollen> anh49Kontrollens) {
-        this.anh49Kontrollens = anh49Kontrollens;
-    }
-
-    public Set<Anh49Abscheiderdetails> getAnh49Abscheiderdetailses() {
-        return this.anh49Abscheiderdetailses;
-    }
-
-    public void setAnh49Abscheiderdetailses(Set<Anh49Abscheiderdetails> anh49Abscheiderdetailses) {
-        this.anh49Abscheiderdetailses = anh49Abscheiderdetailses;
+    public void setAnh49Abfuhrs(Set<Anh49Abfuhr> anh49Abfuhrs) {
+        this.anh49Abfuhrs = anh49Abfuhrs;
     }
 
     public Set<Anh49Analysen> getAnh49Analysens() {
@@ -546,20 +537,12 @@ public class Anh49Fachdaten  implements java.io.Serializable {
         this.anh49Analysens = anh49Analysens;
     }
 
-    public Set<Anh49Abfuhr> getAnh49Abfuhrs() {
-        return this.anh49Abfuhrs;
+    public Set<Anh49Abscheiderdetails> getAnh49Abscheiderdetailses() {
+        return this.anh49Abscheiderdetailses;
     }
 
-    public void setAnh49Abfuhrs(Set<Anh49Abfuhr> anh49Abfuhrs) {
-        this.anh49Abfuhrs = anh49Abfuhrs;
-    }
-
-    public Set<Anh49Verwaltungsverf> getAnh49Verwaltungsverfs() {
-        return this.anh49Verwaltungsverfs;
-    }
-
-    public void setAnh49Verwaltungsverfs(Set<Anh49Verwaltungsverf> anh49Verwaltungsverfs) {
-        this.anh49Verwaltungsverfs = anh49Verwaltungsverfs;
+    public void setAnh49Abscheiderdetailses(Set<Anh49Abscheiderdetails> anh49Abscheiderdetailses) {
+        this.anh49Abscheiderdetailses = anh49Abscheiderdetailses;
     }
 
     /**
@@ -571,7 +554,7 @@ public class Anh49Fachdaten  implements java.io.Serializable {
      */
     @Override
     public String toString() {
-        return DatabaseClassToString.toStringForClass(this); 
+        return DatabaseClassToString.toStringForClass(this);
     }
 
     /**
@@ -580,57 +563,55 @@ public class Anh49Fachdaten  implements java.io.Serializable {
      */
     public String toDebugString() {
         StringBuffer buffer = new StringBuffer();
-        
+
         buffer.append(getClass().getSimpleName()).append("@").append(Integer.toHexString(hashCode())).append(" [");
-        buffer.append("id").append("='").append(getId()).append("' ");			
-        buffer.append("basisObjekt").append("='").append(getBasisObjekt()).append("' ");			
-        buffer.append("klaeranlage").append("='").append(getKlaeranlage()).append("' ");			
-        buffer.append("name").append("='").append(getName()).append("' ");			
-        buffer.append("bemerkungen").append("='").append(getBemerkungen()).append("' ");			
-        buffer.append("planquadrat").append("='").append(getPlanquadrat()).append("' ");			
-        buffer.append("abgemeldet").append("='").append(getAbgemeldet()).append("' ");			
-        buffer.append("technikAnh49").append("='").append(getTechnikAnh49()).append("' ");			
-        buffer.append("technikAnh49Nr").append("='").append(getTechnikAnh49Nr()).append("' ");			
-        buffer.append("sachkundelfa").append("='").append(getSachkundelfa()).append("' ");			
-        buffer.append("werkstatt").append("='").append(getWerkstatt()).append("' ");			
-        buffer.append("bodeneinlaeufe").append("='").append(getBodeneinlaeufe()).append("' ");			
-        buffer.append("waschanlagen").append("='").append(getWaschanlagen()).append("' ");			
-        buffer.append("sonstiges").append("='").append(getSonstiges()).append("' ");			
-        buffer.append("analysemonat").append("='").append(getAnalysemonat()).append("' ");			
-        buffer.append("abwasserfrei").append("='").append(getAbwasserfrei()).append("' ");			
-        buffer.append("anredeantragst").append("='").append(getAnredeantragst()).append("' ");			
-        buffer.append("nameantragst").append("='").append(getNameantragst()).append("' ");			
-        buffer.append("zusantragst").append("='").append(getZusantragst()).append("' ");			
-        buffer.append("strasseantragst").append("='").append(getStrasseantragst()).append("' ");			
-        buffer.append("hausnrantragst").append("='").append(getHausnrantragst()).append("' ");			
-        buffer.append("hausnrzusantragst").append("='").append(getHausnrzusantragst()).append("' ");			
-        buffer.append("plzantragst").append("='").append(getPlzantragst()).append("' ");			
-        buffer.append("ortantragst").append("='").append(getOrtantragst()).append("' ");			
-        buffer.append("sachbearbeiterIn").append("='").append(getSachbearbeiterIn()).append("' ");			
-        buffer.append("ansprechpartnerIn").append("='").append(getAnsprechpartnerIn()).append("' ");			
-        buffer.append("antragvom").append("='").append(getAntragvom()).append("' ");			
-        buffer.append("genehmigung").append("='").append(getGenehmigung()).append("' ");			
-        buffer.append("wiedervorlage").append("='").append(getWiedervorlage()).append("' ");			
-        buffer.append("aenderungsgenehmigung").append("='").append(getAenderungsgenehmigung()).append("' ");			
-        buffer.append("letztesAnschreiben").append("='").append(getLetztesAnschreiben()).append("' ");			
-        buffer.append("anschreiben").append("='").append(getAnschreiben()).append("' ");			
-        buffer.append("waschanlage").append("='").append(getWaschanlage()).append("' ");			
-        buffer.append("ESatzung").append("='").append(getESatzung()).append("' ");			
-        buffer.append("seitwann").append("='").append(getSeitwann()).append("' ");			
-        buffer.append("sonstigestechnik").append("='").append(getSonstigestechnik()).append("' ");			
-        buffer.append("maengel").append("='").append(getMaengel()).append("' ");			
-        buffer.append("behoben").append("='").append(getBehoben()).append("' ");			
-        buffer.append("frist").append("='").append(getFrist()).append("' ");			
-        buffer.append("durchgefuehrt").append("='").append(getDurchgefuehrt()).append("' ");			
-        buffer.append("dekraTuevDatum").append("='").append(getDekraTuevDatum()).append("' ");			
-        buffer.append("enabled").append("='").append(isEnabled()).append("' ");			
-        buffer.append("deleted").append("='").append(isDeleted()).append("' ");			
-        buffer.append("anh49Ortstermines").append("='").append(getAnh49Ortstermines()).append("' ");			
-        buffer.append("anh49Kontrollens").append("='").append(getAnh49Kontrollens()).append("' ");			
-        buffer.append("anh49Abscheiderdetailses").append("='").append(getAnh49Abscheiderdetailses()).append("' ");			
-        buffer.append("anh49Analysens").append("='").append(getAnh49Analysens()).append("' ");			
-        buffer.append("anh49Abfuhrs").append("='").append(getAnh49Abfuhrs()).append("' ");			
-        buffer.append("anh49Verwaltungsverfs").append("='").append(getAnh49Verwaltungsverfs()).append("' ");			
+        buffer.append("id").append("='").append(getId()).append("' ");
+        buffer.append("objekt").append("='").append(getAnfallstelle()).append("' ");
+        buffer.append("klaeranlage").append("='").append(getKlaeranlage()).append("' ");
+        buffer.append("name").append("='").append(getName()).append("' ");
+        buffer.append("bemerkungen").append("='").append(getBemerkungen()).append("' ");
+        buffer.append("planquadrat").append("='").append(getPlanquadrat()).append("' ");
+        buffer.append("abgemeldet").append("='").append(getAbgemeldet()).append("' ");
+        buffer.append("technikAnh49").append("='").append(getTechnikAnh49()).append("' ");
+        buffer.append("technikAnh49Nr").append("='").append(getTechnikAnh49Nr()).append("' ");
+        buffer.append("sachkundelfa").append("='").append(getSachkundelfa()).append("' ");
+        buffer.append("werkstatt").append("='").append(getWerkstatt()).append("' ");
+        buffer.append("bodeneinlaeufe").append("='").append(getBodeneinlaeufe()).append("' ");
+        buffer.append("waschanlagen").append("='").append(getWaschanlagen()).append("' ");
+        buffer.append("sonstiges").append("='").append(getSonstiges()).append("' ");
+        buffer.append("analysemonat").append("='").append(getAnalysemonat()).append("' ");
+        buffer.append("abwasserfrei").append("='").append(getAbwasserfrei()).append("' ");
+        buffer.append("anredeantragst").append("='").append(getAnredeantragst()).append("' ");
+        buffer.append("nameantragst").append("='").append(getNameantragst()).append("' ");
+        buffer.append("zusantragst").append("='").append(getZusantragst()).append("' ");
+        buffer.append("strasseantragst").append("='").append(getStrasseantragst()).append("' ");
+        buffer.append("hausnrantragst").append("='").append(getHausnrantragst()).append("' ");
+        buffer.append("hausnrzusantragst").append("='").append(getHausnrzusantragst()).append("' ");
+        buffer.append("plzantragst").append("='").append(getPlzantragst()).append("' ");
+        buffer.append("ortantragst").append("='").append(getOrtantragst()).append("' ");
+        buffer.append("sachbearbeiterIn").append("='").append(getSachbearbeiterIn()).append("' ");
+        buffer.append("ansprechpartnerIn").append("='").append(getAnsprechpartnerIn()).append("' ");
+        buffer.append("antragvom").append("='").append(getAntragvom()).append("' ");
+        buffer.append("genehmigung").append("='").append(getGenehmigung()).append("' ");
+        buffer.append("wiedervorlage").append("='").append(getWiedervorlage()).append("' ");
+        buffer.append("aenderungsgenehmigung").append("='").append(getAenderungsgenehmigung()).append("' ");
+        buffer.append("letztesAnschreiben").append("='").append(getLetztesAnschreiben()).append("' ");
+        buffer.append("anschreiben").append("='").append(getAnschreiben()).append("' ");
+        buffer.append("waschanlage").append("='").append(getWaschanlage()).append("' ");
+        buffer.append("ESatzung").append("='").append(getESatzung()).append("' ");
+        buffer.append("seitwann").append("='").append(getSeitwann()).append("' ");
+        buffer.append("sonstigestechnik").append("='").append(getSonstigestechnik()).append("' ");
+        buffer.append("maengel").append("='").append(getMaengel()).append("' ");
+        buffer.append("behoben").append("='").append(getBehoben()).append("' ");
+        buffer.append("frist").append("='").append(getFrist()).append("' ");
+        buffer.append("durchgefuehrt").append("='").append(getDurchgefuehrt()).append("' ");
+        buffer.append("dekraTuevDatum").append("='").append(getDekraTuevDatum()).append("' ");
+        buffer.append("sicherheitsabscheider").append("='").append(getSicherheitsabscheider()).append("' ");
+        buffer.append("enabled").append("='").append(isEnabled()).append("' ");
+        buffer.append("deleted").append("='").append(isDeleted()).append("' ");
+        buffer.append("anh49Abfuhrs").append("='").append(getAnh49Abfuhrs()).append("' ");
+        buffer.append("anh49Analysens").append("='").append(getAnh49Analysens()).append("' ");
+        buffer.append("anh49Abscheiderdetailses").append("='").append(getAnh49Abscheiderdetailses()).append("' ");
         buffer.append("]");
 
         return buffer.toString();
@@ -662,7 +643,7 @@ public class Anh49Fachdaten  implements java.io.Serializable {
         result = result * 37 + idValue;
         return result;
     }
-    
+
     /**
      * Merge (save or update) a detached instance
      * @param detachedInstance the instance to merge
@@ -696,56 +677,54 @@ public class Anh49Fachdaten  implements java.io.Serializable {
      * @param copy Anh49Fachdaten
      */
     private void copy(Anh49Fachdaten copy) {
-        this.id = copy.getId();            
-        this.basisObjekt = copy.getBasisObjekt();            
-        this.klaeranlage = copy.getKlaeranlage();            
-        this.name = copy.getName();            
-        this.bemerkungen = copy.getBemerkungen();            
-        this.planquadrat = copy.getPlanquadrat();            
-        this.abgemeldet = copy.getAbgemeldet();            
-        this.technikAnh49 = copy.getTechnikAnh49();            
-        this.technikAnh49Nr = copy.getTechnikAnh49Nr();            
-        this.sachkundelfa = copy.getSachkundelfa();            
-        this.werkstatt = copy.getWerkstatt();            
-        this.bodeneinlaeufe = copy.getBodeneinlaeufe();            
-        this.waschanlagen = copy.getWaschanlagen();            
-        this.sonstiges = copy.getSonstiges();            
-        this.analysemonat = copy.getAnalysemonat();            
-        this.abwasserfrei = copy.getAbwasserfrei();            
-        this.anredeantragst = copy.getAnredeantragst();            
-        this.nameantragst = copy.getNameantragst();            
-        this.zusantragst = copy.getZusantragst();            
-        this.strasseantragst = copy.getStrasseantragst();            
-        this.hausnrantragst = copy.getHausnrantragst();            
-        this.hausnrzusantragst = copy.getHausnrzusantragst();            
-        this.plzantragst = copy.getPlzantragst();            
-        this.ortantragst = copy.getOrtantragst();            
-        this.sachbearbeiterIn = copy.getSachbearbeiterIn();            
-        this.ansprechpartnerIn = copy.getAnsprechpartnerIn();            
-        this.antragvom = copy.getAntragvom();            
-        this.genehmigung = copy.getGenehmigung();            
-        this.wiedervorlage = copy.getWiedervorlage();            
-        this.aenderungsgenehmigung = copy.getAenderungsgenehmigung();            
-        this.letztesAnschreiben = copy.getLetztesAnschreiben();            
-        this.anschreiben = copy.getAnschreiben();            
-        this.waschanlage = copy.getWaschanlage();            
-        this.ESatzung = copy.getESatzung();            
-        this.seitwann = copy.getSeitwann();            
-        this.sonstigestechnik = copy.getSonstigestechnik();            
-        this.maengel = copy.getMaengel();            
-        this.behoben = copy.getBehoben();            
-        this.frist = copy.getFrist();            
-        this.durchgefuehrt = copy.getDurchgefuehrt();            
-        this.dekraTuevDatum = copy.getDekraTuevDatum();            
-        this.enabled = copy.isEnabled();            
-        this.deleted = copy.isDeleted();            
-        this.anh49Ortstermines = copy.getAnh49Ortstermines();            
-        this.anh49Kontrollens = copy.getAnh49Kontrollens();            
-        this.anh49Abscheiderdetailses = copy.getAnh49Abscheiderdetailses();            
-        this.anh49Analysens = copy.getAnh49Analysens();            
-        this.anh49Abfuhrs = copy.getAnh49Abfuhrs();            
-        this.anh49Verwaltungsverfs = copy.getAnh49Verwaltungsverfs();            
-    }    
+        this.id = copy.getId();
+        this.anfallstelle = copy.getAnfallstelle();
+        this.klaeranlage = copy.getKlaeranlage();
+        this.name = copy.getName();
+        this.bemerkungen = copy.getBemerkungen();
+        this.planquadrat = copy.getPlanquadrat();
+        this.abgemeldet = copy.getAbgemeldet();
+        this.technikAnh49 = copy.getTechnikAnh49();
+        this.technikAnh49Nr = copy.getTechnikAnh49Nr();
+        this.sachkundelfa = copy.getSachkundelfa();
+        this.werkstatt = copy.getWerkstatt();
+        this.bodeneinlaeufe = copy.getBodeneinlaeufe();
+        this.waschanlagen = copy.getWaschanlagen();
+        this.sonstiges = copy.getSonstiges();
+        this.analysemonat = copy.getAnalysemonat();
+        this.abwasserfrei = copy.getAbwasserfrei();
+        this.anredeantragst = copy.getAnredeantragst();
+        this.nameantragst = copy.getNameantragst();
+        this.zusantragst = copy.getZusantragst();
+        this.strasseantragst = copy.getStrasseantragst();
+        this.hausnrantragst = copy.getHausnrantragst();
+        this.hausnrzusantragst = copy.getHausnrzusantragst();
+        this.plzantragst = copy.getPlzantragst();
+        this.ortantragst = copy.getOrtantragst();
+        this.sachbearbeiterIn = copy.getSachbearbeiterIn();
+        this.ansprechpartnerIn = copy.getAnsprechpartnerIn();
+        this.antragvom = copy.getAntragvom();
+        this.genehmigung = copy.getGenehmigung();
+        this.wiedervorlage = copy.getWiedervorlage();
+        this.aenderungsgenehmigung = copy.getAenderungsgenehmigung();
+        this.letztesAnschreiben = copy.getLetztesAnschreiben();
+        this.anschreiben = copy.getAnschreiben();
+        this.waschanlage = copy.getWaschanlage();
+        this.ESatzung = copy.getESatzung();
+        this.seitwann = copy.getSeitwann();
+        this.sonstigestechnik = copy.getSonstigestechnik();
+        this.maengel = copy.getMaengel();
+        this.behoben = copy.getBehoben();
+        this.frist = copy.getFrist();
+        this.durchgefuehrt = copy.getDurchgefuehrt();
+        this.dekraTuevDatum = copy.getDekraTuevDatum();
+        this.sicherheitsabscheider = copy.getSicherheitsabscheider();
+        this.enabled = copy.isEnabled();
+        this.deleted = copy.isDeleted();
+        this.anh49Abfuhrs = copy.getAnh49Abfuhrs();
+        this.anh49Analysens = copy.getAnh49Analysens();
+        this.anh49Abscheiderdetailses = copy.getAnh49Abscheiderdetailses();
+    }
 
     /**
      * Delete (mark as deleted) a detached instance
@@ -790,7 +769,13 @@ public class Anh49Fachdaten  implements java.io.Serializable {
     }
 
     /* Custom code goes below here! */
-    public static Anh49Fachdaten findByObjektId(java.lang.Integer id){
+
+
+    /* Custom code goes below here! */
+
+
+    /* Custom code goes below here! */
+    public static Anh49Fachdaten findByAnfallstelleId(java.lang.Integer id){
         log.debug("Found no Anh49Fachdaten with BasisObjekt id: " + id);
         /*List<Anh49Fachdaten> list = Anh49Fachdaten.getAll();
         for(Anh49Fachdaten i : list){
@@ -800,9 +785,15 @@ public class Anh49Fachdaten  implements java.io.Serializable {
             }
         }
         return null;*/
-        BasisObjekt objekt = (BasisObjekt) HibernateSessionFactory.currentSession().createQuery("from BasisObjekt where id= " + id).list().get(0);
+        Anfallstelle anfallstelle = (Anfallstelle) HibernateSessionFactory.currentSession().createQuery("from Anfallstelle where id= " + id).list().get(0);
         //BasisObjekt.findById(id);
-        Set<Anh49Fachdaten> list = objekt.getAnh49Fachdatens();
+        Set<Anh49Fachdaten> list = anfallstelle.getAnh49Fachdatens();
         return list.iterator().next();
     }
+
+	public static Anh49Fachdaten findByObjektId(Objekt obj) {
+
+		return new DatabaseAccess().executeCriteriaToUniqueResult(
+				DetachedCriteria.forClass(Anh49Fachdaten.class).add(Restrictions.eq("objekt", obj)), new Anh49Fachdaten());
+	}
 }

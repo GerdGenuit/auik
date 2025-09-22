@@ -21,7 +21,11 @@
 
 package de.bielefeld.umweltamt.aui.module.common.tablemodels;
 
-import de.bielefeld.umweltamt.aui.mappings.basis.BasisSachbearbeiter;
+import javax.swing.JOptionPane;
+import javax.swing.JPanel;
+
+import de.bielefeld.umweltamt.aui.mappings.DatabaseQuery;
+import de.bielefeld.umweltamt.aui.mappings.basis.Sachbearbeiter;
 import de.bielefeld.umweltamt.aui.utils.tablemodelbase.EditableListTableModel;
 
 /**
@@ -32,9 +36,10 @@ public class EditorSachbearbeiterModel extends EditableListTableModel {
 
 
 	/**
-	 * 
+	 *
 	 */
 	private static final long serialVersionUID = 99251332998082843L;
+	boolean isnew = new Boolean(false);
 
 	public EditorSachbearbeiterModel() {
         super(new String[]{
@@ -54,7 +59,7 @@ public class EditorSachbearbeiterModel extends EditableListTableModel {
      */
     @Override
     public Object getColumnValue(Object objectAtRow, int columnIndex) {
-        BasisSachbearbeiter bearbeiter = (BasisSachbearbeiter) objectAtRow;
+    	Sachbearbeiter bearbeiter = (Sachbearbeiter) objectAtRow;
         Object tmp;
 
         switch (columnIndex) {
@@ -94,61 +99,76 @@ public class EditorSachbearbeiterModel extends EditableListTableModel {
 
 	@Override
 	public void editObject(Object objectAtRow, int columnIndex, Object newValue) {
-		
-		BasisSachbearbeiter tmp = (BasisSachbearbeiter) objectAtRow;
+
+		Sachbearbeiter tmp = (Sachbearbeiter) objectAtRow;
 		switch (columnIndex) {
         case 0:
         	String tmpID = (String) newValue;
-        	tmp.setKennummer(tmpID);
+        	if (Sachbearbeiter.findByKennummer(tmpID) != null && isnew) {
+                JOptionPane.showMessageDialog(
+                        new JPanel(),
+                        "Die Kennummer existiert bereits.",
+                        "Speicherfehler",
+                        JOptionPane.WARNING_MESSAGE);
+                return;
+        	}else {
+        		tmp.setKennummer(tmpID);
+    		}
+
         	break;
-        	
+
         case 1:
         	String tmpName = (String) newValue;
         	tmp.setName(tmpName);
         	break;
-        	
+
         case 2:
         	String tmpZeichen = (String) newValue;
         	tmp.setZeichen(tmpZeichen);
         	break;
-        	
+
         case 3:
         	String tmpZimmer = (String) newValue;
         	tmp.setZimmer(tmpZimmer);
         	break;
-        	
+
         case 4:
         	String tmpTelefon = (String) newValue;
         	tmp.setTelefon(tmpTelefon);
         	break;
-        	
+
         case 5:
         	String tmpEmail = (String) newValue;
         	tmp.setEmail(tmpEmail);
         	break;
-        	
+
         case 6:
         	String tmpGruppe = (String) newValue;
         	tmp.setGehoertzuarbeitsgr(tmpGruppe);
         	break;
 
         default:
-            break;        	
-        	
+            break;
+
 		}
-		BasisSachbearbeiter.merge(tmp);
+
+		tmp.merge();
+		isnew = false;
+
 	}
 
 	@Override
 	public Object newObject() {
-		BasisSachbearbeiter tmp = new BasisSachbearbeiter();
+		Sachbearbeiter tmp = new Sachbearbeiter();
+        tmp.setId(DatabaseQuery.newSachbearbeiterID());
+        isnew = true;
 		return tmp;
 	}
 
     @Override
     public boolean objectRemoved(Object objectAtRow) {
-    	BasisSachbearbeiter removedSachbearbieter = (BasisSachbearbeiter) objectAtRow;
-        return BasisSachbearbeiter.delete(removedSachbearbieter);
+    	Sachbearbeiter removedSachbearbieter = (Sachbearbeiter) objectAtRow;
+        return Sachbearbeiter.delete(removedSachbearbieter);
     }
 
     /**
@@ -156,7 +176,7 @@ public class EditorSachbearbeiterModel extends EditableListTableModel {
      * @param rowIndex Die Zeile
      * @return Das Objekt bei rowIndex
      */
-    public BasisSachbearbeiter getRow(int rowIndex) {
-        return (BasisSachbearbeiter) getObjectAtRow(rowIndex);
+    public Sachbearbeiter getRow(int rowIndex) {
+        return (Sachbearbeiter) getObjectAtRow(rowIndex);
     }
 }

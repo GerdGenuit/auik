@@ -22,15 +22,18 @@
 package de.bielefeld.umweltamt.aui.module.common.tablemodels;
 
 import java.awt.Color;
+import java.util.Set;
 
 import de.bielefeld.umweltamt.aui.mappings.DatabaseQuery;
-import de.bielefeld.umweltamt.aui.mappings.basis.BasisAdresse;
-import de.bielefeld.umweltamt.aui.mappings.basis.BasisObjekt;
-import de.bielefeld.umweltamt.aui.mappings.basis.BasisObjektarten;
-import de.bielefeld.umweltamt.aui.mappings.basis.BasisLage;
+import de.bielefeld.umweltamt.aui.mappings.basis.Adresse;
+import de.bielefeld.umweltamt.aui.mappings.basis.Inhaber;
+import de.bielefeld.umweltamt.aui.mappings.basis.Objekt;
+import de.bielefeld.umweltamt.aui.mappings.basis.Objektarten;
 import de.bielefeld.umweltamt.aui.utils.StringUtils;
 import de.bielefeld.umweltamt.aui.utils.tablemodelbase.ListTableModel;
-import de.bielefeld.umweltamt.aui.mappings.basis.BasisMapAdresseLage;
+import de.bielefeld.umweltamt.aui.mappings.basis.Standort;
+import de.bielefeld.umweltamt.aui.mappings.elka.Anfallstelle;
+import de.bielefeld.umweltamt.aui.mappings.oberflgw.Sonderbauwerk;
 import de.bielefeld.umweltamt.aui.module.BasisAdresseSuchen;
 
 /**
@@ -76,23 +79,71 @@ public class BasisObjektModel extends ListTableModel {
     public Object getColumnValue(Object objectAtRow, int columnIndex) {
         Object tmp;
 
-        BasisObjekt bo = (BasisObjekt) objectAtRow;
+        Objekt bo = (Objekt) objectAtRow;
         switch(columnIndex) {
             case 0:
                 tmp = bo.getId();
                 break;
             case 1:
                 if ("Standort".equals(secondColumn)) {
-                    tmp = DatabaseQuery.getStandortString(bo.getBasisStandort());
+                    tmp = DatabaseQuery.getStandortString(bo.getStandortid());
                 } else if ("Betreiber".equals(secondColumn)) {
-                    tmp = bo.getBasisAdresse();
+                    tmp = bo.getBetreiberid();
                 } else {
                     tmp = secondColumn;
                 }
                 break;
-            case 2:
-                BasisObjektarten boa = bo.getBasisObjektarten();
-                tmp = boa;
+			case 2:
+				if (bo.getObjektarten().getAbteilung() == "AwSV") {
+					tmp = bo.getObjektarten();
+				} else if (bo.getAnfallstelles().size() > 0) {
+					Set<Anfallstelle> list = bo.getAnfallstelles();
+					Anfallstelle anfallstelle = list.iterator().next();
+					if (!(anfallstelle.getAnhangId() == null) && !anfallstelle.getAnhangId().equals("99")) {
+						tmp = "Anfallstelle (Anh " + anfallstelle.getAnhangId() + ")";
+					} else if (anfallstelle.getAbwaBeschaffOpt() != null && anfallstelle.getAbwaBeschaffOpt() == 3){
+						tmp = "Anfallstelle (" + "Niederschlagswasser" + ")";
+					} else if (anfallstelle.getAnhangId().equals("99")){
+						tmp = "Anfallstelle (" + anfallstelle.getAnlagenart() + ")";
+					} else {
+						tmp = "Anfallstelle";
+					}
+				} else if (bo.getSonderbauwerks().size() > 0) {
+					Set<Sonderbauwerk> list = bo.getSonderbauwerks();
+					Sonderbauwerk sonderbauwerk = bo.getSonderbauwerks().iterator().next();
+					if (sonderbauwerk.getTypOpt() == 1) {
+						tmp = "Sonderbauwerk (RRB)";
+						}
+					else if (sonderbauwerk.getTypOpt() == 2) {
+						tmp = "Sonderbauwerk (RKB)";
+						}
+					else if (sonderbauwerk.getTypOpt() == 3) {
+						tmp = "Sonderbauwerk (RBF)";
+						}
+					else if (sonderbauwerk.getTypOpt() == 4) {
+						tmp = "Sonderbauwerk (BF)";
+						}
+					else if (sonderbauwerk.getTypOpt() == 5) {
+						tmp = "Sonderbauwerk (RÜT)";
+						}
+					else if (sonderbauwerk.getTypOpt() == 6) {
+						tmp = "Sonderbauwerk (RÜM)";
+						}
+					else if (sonderbauwerk.getTypOpt() == 7) {
+						tmp = "Sonderbauwerk (RÜB)";
+						}
+					else if (sonderbauwerk.getTypOpt() == 8) {
+						tmp = "Sonderbauwerk (SK)";
+						}
+					else if (sonderbauwerk.getTypOpt() == 9) {
+						tmp = "Sonderbauwerk (RST)";
+						}
+					else {
+						tmp = "Sonderbauwerk (AL)";
+						}
+				} else {
+					tmp = bo.getObjektarten();
+				}
                 break;
             case 3:
                 tmp = bo.getBeschreibung();
@@ -110,11 +161,11 @@ public class BasisObjektModel extends ListTableModel {
 
     @Override
     public boolean objectRemoved(Object objectAtRow) {
-        BasisObjekt removedObjekt = (BasisObjekt) objectAtRow;
+        Objekt removedObjekt = (Objekt) objectAtRow;
         boolean removed;
 
         if (removedObjekt.getId() != null) {
-            removed = BasisObjekt.delete(removedObjekt);
+            removed = Objekt.delete(removedObjekt);
         } else {
             removed = true;
         }
@@ -127,43 +178,58 @@ public class BasisObjektModel extends ListTableModel {
      * @param rowIndex Die Zeile
      * @return Das Objekt bei rowIndex
      */
-    public BasisObjekt getRow(int rowIndex) {
-        return (BasisObjekt) getObjectAtRow(rowIndex);
+    public Objekt getRow(int rowIndex) {
+        return (Objekt) getObjectAtRow(rowIndex);
     }
 
     /**
      * Durchsucht den Tabelleninhalt nach der Betreiber-Id.
      * @param betreiberId Die Betreiber-Id
      */
-    public void searchByBetreiber(BasisAdresse betr) {
-        setList(DatabaseQuery.getObjekteByBetreiber(betr, abteilung));
+    public void searchByInhaber(Inhaber betr) {
+        setList(DatabaseQuery.getObjekteByInhaber(betr, abteilung, null, false));
+    }
+
+    /**
+     * Durchsucht den Tabelleninhalt nach der Betreiber-Id.
+     * @param betreiberId Die Betreiber-Id
+     */
+    public void searchByInhaber(Inhaber betr, Integer istartid) {
+        setList(DatabaseQuery.getObjekteByInhaber(betr, null, istartid, true));
+    }
+
+    /**
+     * Durchsucht den Tabelleninhalt nach der Betreiber-Id.
+     * @param betreiberId Die Betreiber-Id
+     */
+    public void searchByInhaber(Inhaber betr, String abteilung) {
+        setList(DatabaseQuery.getObjekteByInhaber(betr, abteilung, null, false));
     }
 
     /**
      * Durchsucht den Tabelleninhalt nach der Standort-Id.
      * @param standortId Die Standort-Id
      */
-    public void searchByStandort(BasisMapAdresseLage standort) {
-        setList(DatabaseQuery.getObjekteByStrasse(
-            standort.getBasisAdresse(), abteilung, null, null));
-    }
-
-    /**
-     * Durchsucht den Tabelleninhalt nach der Standort-Id.
-     * @param standortId Die Standort-Id
-     */
-    public void searchByStandort(BasisAdresse standort) {
-        setList(DatabaseQuery.getObjekteByAdresse(
-            standort, null, null, true));
-    }
-
-    /**
-     * Durchsucht den Tabelleninhalt nach der Standort-Id.
-     * @param standortId Die Standort-Id
-     */
-    public void searchByStandort(BasisAdresse standort, String abteilung) {
+    public void searchByStandort(Adresse adr, String abteilung) {
         setList(DatabaseQuery.getObjekteByStandort(
-            standort, abteilung, null, null));
+        		adr, abteilung, null, null));
+    }
+
+    /**
+     * Durchsucht den Tabelleninhalt nach der Standort-Id.
+     * @param standortId Die Standort-Id
+     */
+    public void searchByStandort(Objekt obj) {
+        setList(DatabaseQuery.getObjekteByStandort(obj));
+    }
+
+    /**
+     * Durchsucht den Tabelleninhalt nach der Standort-Id.
+     * @param standortId Die Standort-Id
+     */
+    public void searchByStandort(Adresse adr) {
+        setList(DatabaseQuery.getObjekteByStandort(
+        		adr, null, null, null));
     }
 
     /**
@@ -171,25 +237,25 @@ public class BasisObjektModel extends ListTableModel {
      * @param standortId Die Standort-Id
      */
     public void searchByStandort(
-        BasisAdresse standort, String abteilung, Integer nichtartid) {
-        setList(DatabaseQuery.getObjekteByStrasse(
-            standort, abteilung, nichtartid, false));
+        Adresse adr, String abteilung, Integer nichtartid) {
+        setList(DatabaseQuery.getObjekteByStandort(
+        		adr, abteilung, nichtartid, false));
     }
 
     /**
      * Durchsucht den Tabelleninhalt nach der Standort-Id.
      * @param standortId Die Standort-Id
      */
-    public void searchByStandort(BasisAdresse standort, Integer istartid) {
+    public void searchByStandort(Adresse adr, Integer istartid) {
         setList(DatabaseQuery.getObjekteByStandort(
-            standort, null, istartid, true));
+        		adr, null, istartid, true));
     }
 
     /**
      * Remove a BasisObjekt from the model
      * @param objekt
      */
-    public void removeFromList(BasisObjekt objekt) {
+    public void removeFromList(Objekt objekt) {
         this.getList().remove(objekt);
     }
 }

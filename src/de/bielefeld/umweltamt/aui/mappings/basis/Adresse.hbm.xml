@@ -1,0 +1,82 @@
+<?xml version="1.0"?>
+<!DOCTYPE hibernate-mapping PUBLIC "-//Hibernate/Hibernate Mapping DTD 3.0//EN"
+"http://www.hibernate.org/dtd/hibernate-mapping-3.0.dtd">
+<!-- Generated 28.08.2018 12:49:47 by Hibernate Tools 5.0.0.Final -->
+<hibernate-mapping>
+    <class name="de.bielefeld.umweltamt.aui.mappings.basis.Adresse" table="adresse" schema="basis" lazy="false" optimistic-lock="version">
+        <id name="id" type="java.lang.Integer">
+            <column name="id" />
+            <generator class="identity" />
+        </id>
+        <many-to-one name="standortgghwsg" class="de.bielefeld.umweltamt.aui.mappings.awsv.Standortgghwsg" fetch="select">
+            <column name="standortgegebid" />
+        </many-to-one>
+        <many-to-one name="wassereinzugsgebiet" class="de.bielefeld.umweltamt.aui.mappings.awsv.Wassereinzugsgebiet" fetch="select">
+            <column name="wassereinzgebid" />
+        </many-to-one>
+        <many-to-one name="gemarkung" class="de.bielefeld.umweltamt.aui.mappings.basis.Gemarkung" fetch="select">
+            <column name="gemarkungid" />
+        </many-to-one>
+        <property name="strasse" type="java.lang.String">
+            <column name="strasse" />
+        </property>
+        <property name="hausnr" type="java.lang.Integer">
+            <column name="hausnr" />
+        </property>
+        <property name="hausnrzus" type="java.lang.String">
+            <column name="hausnrzus" />
+        </property>
+        <property name="plzzs" type="java.lang.String">
+            <column name="plzzs" />
+        </property>
+        <property name="plz" type="java.lang.String">
+            <column name="plz" />
+        </property>
+        <property name="ort" type="java.lang.String">
+            <column name="ort" />
+        </property>
+        <property name="entgebid" type="java.lang.String">
+            <column name="entgebid" />
+        </property>
+        <property name="strasseeigent" type="java.lang.String">
+            <column name="strasseeigent" />
+        </property>
+        <property name="ueberschgeb" type="boolean">
+            <column name="ueberschgeb" />
+        </property>
+        <property name="flur" type="java.lang.String">
+            <column name="flur" />
+        </property>
+        <property name="flurstueck" type="java.lang.String">
+            <column name="flurstueck" />
+        </property>
+        <property name="sachbe33rav" type="java.lang.String">
+            <column name="sachbe33rav" />
+        </property>
+        <property name="sachbe33hee" type="java.lang.String">
+            <column name="sachbe33hee" />
+        </property>
+        <property name="bemerkungen" type="java.lang.String">
+            <column name="bemerkungen" />
+        </property>
+        <property name="revidatum" type="java.util.Date">
+            <column name="revidatum" length="29" />
+        </property>
+        <property name="revihandz" type="java.lang.String">
+            <column name="revihandz" />
+        </property>
+        <property name="enabled" type="boolean">
+            <column name="_enabled" not-null="true" />
+        </property>
+        <property name="deleted" type="boolean">
+            <column name="_deleted" not-null="true" />
+        </property>
+        <property name="erstellDat" type="java.util.Date">
+            <column name="erstell_dat" length="13" />
+        </property>
+        <property name="iglId" type="java.lang.Integer">
+            <column name="igl_id" />
+        </property>
+
+    </class>
+</hibernate-mapping>

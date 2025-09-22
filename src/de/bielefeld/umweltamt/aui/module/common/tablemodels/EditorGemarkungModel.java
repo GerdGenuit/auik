@@ -22,7 +22,7 @@
 package de.bielefeld.umweltamt.aui.module.common.tablemodels;
 
 import de.bielefeld.umweltamt.aui.mappings.DatabaseQuery;
-import de.bielefeld.umweltamt.aui.mappings.basis.BasisGemarkung;
+import de.bielefeld.umweltamt.aui.mappings.basis.Gemarkung;
 import de.bielefeld.umweltamt.aui.utils.tablemodelbase.EditableListTableModel;
 
 /**
@@ -32,7 +32,7 @@ import de.bielefeld.umweltamt.aui.utils.tablemodelbase.EditableListTableModel;
 public class EditorGemarkungModel extends EditableListTableModel {
 
 	/**
-	 * 
+	 *
 	 */
 	private static final long serialVersionUID = -7170618777899362092L;
 
@@ -63,7 +63,7 @@ public class EditorGemarkungModel extends EditableListTableModel {
      */
     @Override
     public Object getColumnValue(Object objectAtRow, int columnIndex) {
-        BasisGemarkung gemarkung = (BasisGemarkung) objectAtRow;
+    	Gemarkung gemarkung = (Gemarkung) objectAtRow;
         Object tmp;
 
         switch (columnIndex) {
@@ -88,37 +88,37 @@ public class EditorGemarkungModel extends EditableListTableModel {
 
 	@Override
 	public void editObject(Object objectAtRow, int columnIndex, Object newValue) {
-		
-		BasisGemarkung tmp = (BasisGemarkung) objectAtRow;
+
+		Gemarkung tmp = (Gemarkung) objectAtRow;
 		switch (columnIndex) {
         case 0:
         	Integer tmpID = (Integer) newValue;
         	tmp.setId(tmpID);
         	break;
-        	
+
         case 1:
         	String tmpArt = (String) newValue;
         	tmp.setGemarkung(tmpArt);
         	break;
 
         default:
-            break;        	
-        	
+            break;
+
 		}
-		BasisGemarkung.merge(tmp);
+		Gemarkung.merge(tmp);
 	}
 
 	@Override
 	public Object newObject() {
-		BasisGemarkung tmp = new BasisGemarkung();
+		Gemarkung tmp = new Gemarkung();
 		tmp.setId(DatabaseQuery.newGemarkungID());
 		return tmp;
 	}
 
     @Override
     public boolean objectRemoved(Object objectAtRow) {
-    	BasisGemarkung removedGemarkung = (BasisGemarkung) objectAtRow;
-        return BasisGemarkung.delete(removedGemarkung);
+    	Gemarkung removedGemarkung = (Gemarkung) objectAtRow;
+        return Gemarkung.delete(removedGemarkung);
     }
 
     /**
@@ -126,7 +126,7 @@ public class EditorGemarkungModel extends EditableListTableModel {
      * @param rowIndex Die Zeile
      * @return Das Objekt bei rowIndex
      */
-    public BasisGemarkung getRow(int rowIndex) {
-        return (BasisGemarkung) getObjectAtRow(rowIndex);
+    public Gemarkung getRow(int rowIndex) {
+        return (Gemarkung) getObjectAtRow(rowIndex);
     }
 }
